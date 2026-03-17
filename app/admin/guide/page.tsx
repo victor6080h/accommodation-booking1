@@ -3,49 +3,50 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, Save } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export default function AdminGuide() {
   const [guideContent, setGuideContent] = useState('')
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [guideId, setGuideId] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load guide content from localStorage
-    const savedGuide = localStorage.getItem('guideContent')
-    if (savedGuide) {
-      setGuideContent(savedGuide)
-    } else {
-      // Default guide content
-      setGuideContent(`# 객실 이용안내
-
-## 체크인/체크아웃
-- 체크인: 오후 3시 이후
-- 체크아웃: 오전 11시까지
-
-## 시설 안내
-- 주차: 무료 주차 가능 (선착순)
-- WiFi: 무료 인터넷 제공
-- 주방: 전자레인지, 냉장고, 식기류 구비
-
-## 이용 규칙
-- 실내 금연
-- 반려동물 동반 불가
-- 정숙 시간: 밤 10시 ~ 아침 8시
-
-## 주변 정보
-- 속초 해수욕장: 도보 10분
-- 편의점: 도보 3분
-- 관광수산시장: 차량 5분
-
-## 문의
-- 전화: 010-XXXX-XXXX
-- 이메일: sokcho@apartment.com`)
-    }
+    loadGuideContent()
   }, [])
 
-  const handleSave = () => {
-    localStorage.setItem('guideContent', guideContent)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const loadGuideContent = async () => {
+    const { data, error } = await supabase
+      .from('guide_content')
+      .select('*')
+      .limit(1)
+      .single()
+
+    if (error) {
+      console.error('Error loading guide:', error)
+    } else if (data) {
+      setGuideContent(data.content)
+      setGuideId(data.id)
+    }
+  }
+
+  const handleSave = async () => {
+    setLoading(true)
+
+    const { error } = await supabase
+      .from('guide_content')
+      .update({ content: guideContent, updated_at: new Date().toISOString() })
+      .eq('id', guideId)
+
+    setLoading(false)
+
+    if (error) {
+      console.error('Error saving guide:', error)
+      alert('저장에 실패했습니다.')
+    } else {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    }
   }
 
   return (
@@ -80,9 +81,10 @@ export default function AdminGuide() {
                   ? 'bg-green-600 text-white' 
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
+              disabled={loading}
             >
               <Save className="w-5 h-5" />
-              <span>{saved ? '저장완료!' : '저장하기'}</span>
+              <span>{loading ? '저장중...' : saved ? '저장완료!' : '저장하기'}</span>
             </button>
           </div>
 

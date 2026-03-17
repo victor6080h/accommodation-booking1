@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, XCircle, DollarSign, TrendingUp } from 'lucide-react'
+import { supabase, Room as SupabaseRoom, Booking as SupabaseBooking } from '@/lib/supabase'
 
 interface Room {
   id: string
@@ -31,18 +32,48 @@ export default function AdminCalendar() {
   const [rooms, setRooms] = useState<Room[]>([])
 
   useEffect(() => {
-    // Load bookings from localStorage
-    const savedBookings = localStorage.getItem('bookings')
-    if (savedBookings) {
-      setBookings(JSON.parse(savedBookings))
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    // Load bookings from Supabase
+    const { data: bookingsData } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('check_in', { ascending: true })
+
+    if (bookingsData) {
+      const formattedBookings = bookingsData.map(b => ({
+        id: b.id,
+        roomId: b.room_id,
+        roomName: b.room_name,
+        guestName: b.guest_name,
+        guestPhone: b.guest_phone,
+        checkIn: b.check_in,
+        checkOut: b.check_out,
+        status: b.status as 'confirmed' | 'completed' | 'cancelled'
+      }))
+      setBookings(formattedBookings)
     }
 
-    // Load rooms from localStorage
-    const savedRooms = localStorage.getItem('rooms')
-    if (savedRooms) {
-      setRooms(JSON.parse(savedRooms))
+    // Load rooms from Supabase
+    const { data: roomsData } = await supabase
+      .from('rooms')
+      .select('*')
+      .order('created_at', { ascending: true })
+
+    if (roomsData) {
+      const formattedRooms = roomsData.map(r => ({
+        id: r.id,
+        name: r.name,
+        roomNumber: r.room_number,
+        price: r.price,
+        capacity: r.capacity,
+        description: r.description || ''
+      }))
+      setRooms(formattedRooms)
     }
-  }, [])
+  }
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
@@ -66,20 +97,24 @@ export default function AdminCalendar() {
   }
 
   // 예약 취소 함수
-  const handleCancelBooking = (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     if (!confirm('정말 이 예약을 취소하시겠습니까?')) {
       return
     }
 
-    const updatedBookings = bookings.map(booking =>
-      booking.id === bookingId
-        ? { ...booking, status: 'cancelled' as const }
-        : booking
-    )
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'cancelled' })
+      .eq('id', bookingId)
 
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings))
-    setBookings(updatedBookings)
+    if (error) {
+      console.error('Error cancelling booking:', error)
+      alert('예약 취소에 실패했습니다.')
+      return
+    }
+
     alert('예약이 취소되었습니다.')
+    loadData() // Reload data
   }
 
   // 숙박일수 계산

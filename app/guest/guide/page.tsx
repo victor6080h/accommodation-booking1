@@ -3,43 +3,28 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, Calendar } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export default function GuestGuide() {
   const [guideContent, setGuideContent] = useState('')
 
   useEffect(() => {
-    // Load guide content from localStorage
-    const savedGuide = localStorage.getItem('guideContent')
-    if (savedGuide) {
-      setGuideContent(savedGuide)
-    } else {
-      // Default guide content
-      setGuideContent(`# 객실 이용안내
-
-## 체크인/체크아웃
-- 체크인: 오후 3시 이후
-- 체크아웃: 오전 11시까지
-
-## 시설 안내
-- 주차: 무료 주차 가능 (선착순)
-- WiFi: 무료 인터넷 제공
-- 주방: 전자레인지, 냉장고, 식기류 구비
-
-## 이용 규칙
-- 실내 금연
-- 반려동물 동반 불가
-- 정숙 시간: 밤 10시 ~ 아침 8시
-
-## 주변 정보
-- 속초 해수욕장: 도보 10분
-- 편의점: 도보 3분
-- 관광수산시장: 차량 5분
-
-## 문의
-- 전화: 010-XXXX-XXXX
-- 이메일: sokcho@apartment.com`)
-    }
+    loadGuideContent()
   }, [])
+
+  const loadGuideContent = async () => {
+    const { data, error } = await supabase
+      .from('guide_content')
+      .select('*')
+      .limit(1)
+      .single()
+
+    if (error) {
+      console.error('Error loading guide:', error)
+    } else if (data) {
+      setGuideContent(data.content)
+    }
+  }
 
   const renderContent = () => {
     return guideContent.split('\n').map((line, index) => {

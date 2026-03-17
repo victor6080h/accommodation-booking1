@@ -3,15 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
-
-interface Room {
-  id: string
-  name: string
-  roomNumber: string
-  price: number
-  capacity: number
-  description: string
-}
+import { supabase, Room } from '@/lib/supabase'
 
 export default function AdminRooms() {
   const [rooms, setRooms] = useState<Room[]>([])
@@ -24,75 +16,120 @@ export default function AdminRooms() {
     capacity: '',
     description: ''
   })
+  const [loading, setLoading] = useState(false)
 
-  // Load rooms from localStorage
+  // Load rooms from Supabase
   useEffect(() => {
-    const savedRooms = localStorage.getItem('rooms')
-    if (savedRooms) {
-      setRooms(JSON.parse(savedRooms))
-    }
+    loadRooms()
   }, [])
 
-  // Save rooms to localStorage
-  const saveRooms = (updatedRooms: Room[]) => {
-    localStorage.setItem('rooms', JSON.stringify(updatedRooms))
-    setRooms(updatedRooms)
+  const loadRooms = async () => {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('*')
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error loading rooms:', error)
+      alert('객실 목록을 불러오는데 실패했습니다.')
+    } else {
+      setRooms(data || [])
+    }
   }
 
-  const handleAddRoom = () => {
+  const handleAddRoom = async () => {
     if (!formData.name || !formData.roomNumber || !formData.price || !formData.capacity) {
       alert('모든 필수 항목을 입력해주세요.')
       return
     }
 
-    const newRoom: Room = {
-      id: Date.now().toString(),
-      name: formData.name,
-      roomNumber: formData.roomNumber,
-      price: parseInt(formData.price),
-      capacity: parseInt(formData.capacity),
-      description: formData.description
-    }
+    setLoading(true)
 
-    saveRooms([...rooms, newRoom])
-    resetForm()
+    const { data, error } = await supabase
+      .from('rooms')
+      .insert([
+        {
+          name: formData.name,
+          room_number: formData.roomNumber,
+          price: parseInt(formData.price),
+          capacity: parseInt(formData.capacity),
+          description: formData.description
+        }
+      ])
+      .select()
+
+    setLoading(false)
+
+    if (error) {
+      console.error('Error adding room:', error)
+      alert('객실 등록에 실패했습니다.')
+    } else {
+      alert('객실이 등록되었습니다!')
+      loadRooms()
+      resetForm()
+    }
   }
 
   const handleEditRoom = (room: Room) => {
     setEditingRoom(room)
     setFormData({
       name: room.name,
-      roomNumber: room.roomNumber,
+      roomNumber: room.room_number,
       price: room.price.toString(),
       capacity: room.capacity.toString(),
-      description: room.description
+      description: room.description || ''
     })
     setIsEditing(true)
   }
 
-  const handleUpdateRoom = () => {
+  const handleUpdateRoom = async () => {
     if (!editingRoom) return
 
-    const updatedRooms = rooms.map(room =>
-      room.id === editingRoom.id
-        ? {
-            ...room,
-            name: formData.name,
-            roomNumber: formData.roomNumber,
-            price: parseInt(formData.price),
-            capacity: parseInt(formData.capacity),
-            description: formData.description
-          }
-        : room
-    )
+    setLoading(true)
 
-    saveRooms(updatedRooms)
-    resetForm()
+    const { error } = await supabase
+      .from('rooms')
+      .update({
+        name: formData.name,
+        room_number: formData.roomNumber,
+        price: parseInt(formData.price),
+        capacity: parseInt(formData.capacity),
+        description: formData.description
+      })
+      .eq('id', editingRoom.id)
+
+    setLoading(false)
+
+    if (error) {
+      console.error('Error updating room:', error)
+      alert('객실 수정에 실패했습니다.')
+    } else {
+      alert('객실이 수정되었습니다!')
+      loadRooms()
+      resetForm()
+    }
   }
 
-  const handleDeleteRoom = (id: string) => {
-    if (confirm('정말 삭제하시겠습니까?')) {
-      saveRooms(rooms.filter(room => room.id !== id))
+  const handleDeleteRoom = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) {
+      return
+    }
+
+    setLoading(true)
+
+    const { error } = await supabase
+      .from('rooms')
+      .delete()
+      .eq('id', id)
+
+    setLoading(false)
+
+    if (error) {
+      console.error('Error deleting room:', error)
+      alert('객실 삭제에 실패했습니다.')
+    } else {
+      alert('객실이 삭제되었습니다!')
+      loadRooms()
     }
   }
 
@@ -208,6 +245,7 @@ export default function AdminRooms() {
               <button
                 onClick={resetForm}
                 className="flex items-center space-x-2 px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                disabled={loading}
               >
                 <X className="w-5 h-5" />
                 <span>취소</span>
@@ -215,10 +253,11 @@ export default function AdminRooms() {
             )}
             <button
               onClick={isEditing ? handleUpdateRoom : handleAddRoom}
-              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+              disabled={loading}
             >
               <Save className="w-5 h-5" />
-              <span>{isEditing ? '수정' : '등록'}</span>
+              <span>{loading ? '처리중...' : isEditing ? '수정' : '등록'}</span>
             </button>
           </div>
         </div>
@@ -238,18 +277,20 @@ export default function AdminRooms() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900">{room.name}</h3>
-                      <p className="text-sm text-gray-600">{room.roomNumber}</p>
+                      <p className="text-sm text-gray-600">{room.room_number}</p>
                     </div>
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEditRoom(room)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        disabled={loading}
                       >
                         <Edit2 className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDeleteRoom(room.id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        disabled={loading}
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>

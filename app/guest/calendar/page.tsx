@@ -3,26 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react'
-
-interface Room {
-  id: string
-  name: string
-  roomNumber: string
-  price: number
-  capacity: number
-  description: string
-}
-
-interface Booking {
-  id: string
-  roomId: string
-  roomName: string
-  guestName: string
-  guestPhone: string
-  checkIn: string
-  checkOut: string
-  status: 'confirmed' | 'completed' | 'cancelled'
-}
+import { supabase, Room, Booking } from '@/lib/supabase'
 
 export default function GuestCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -40,20 +21,51 @@ export default function GuestCalendar() {
   })
 
   useEffect(() => {
-    const savedBookings = localStorage.getItem('bookings')
-    if (savedBookings) {
-      setBookings(JSON.parse(savedBookings))
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    // Load bookings from Supabase
+    const { data: bookingsData } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('check_in', { ascending: true })
+
+    if (bookingsData) {
+      const formattedBookings = bookingsData.map(b => ({
+        id: b.id,
+        roomId: b.room_id,
+        roomName: b.room_name,
+        guestName: b.guest_name,
+        guestPhone: b.guest_phone,
+        checkIn: b.check_in,
+        checkOut: b.check_out,
+        status: b.status as 'confirmed' | 'completed' | 'cancelled'
+      }))
+      setBookings(formattedBookings)
     }
 
-    const savedRooms = localStorage.getItem('rooms')
-    if (savedRooms) {
-      const parsedRooms = JSON.parse(savedRooms)
-      setRooms(parsedRooms)
-      if (parsedRooms.length > 0) {
-        setFormData(prev => ({ ...prev, roomId: parsedRooms[0].id }))
+    // Load rooms from Supabase
+    const { data: roomsData } = await supabase
+      .from('rooms')
+      .select('*')
+      .order('created_at', { ascending: true })
+
+    if (roomsData) {
+      const formattedRooms = roomsData.map(r => ({
+        id: r.id,
+        name: r.name,
+        roomNumber: r.room_number,
+        price: r.price,
+        capacity: r.capacity,
+        description: r.description || ''
+      }))
+      setRooms(formattedRooms)
+      if (formattedRooms.length > 0) {
+        setFormData(prev => ({ ...prev, roomId: formattedRooms[0].id }))
       }
     }
-  }, [])
+  }
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
@@ -166,7 +178,7 @@ export default function GuestCalendar() {
     }
   }
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (!selectedDates.checkIn || !selectedDates.checkOut || !formData.guestName || !formData.guestPhone || !formData.roomId) {
       alert('모든 정보를 입력해주세요.')
       return
@@ -178,25 +190,31 @@ export default function GuestCalendar() {
       return
     }
 
-    const newBooking: Booking = {
-      id: Date.now().toString(),
-      roomId: formData.roomId,
-      roomName: selectedRoom.name,
-      guestName: formData.guestName,
-      guestPhone: formData.guestPhone,
-      checkIn: formatDate(selectedDates.checkIn),
-      checkOut: formatDate(selectedDates.checkOut),
-      status: 'confirmed'
-    }
+    const { error } = await supabase
+      .from('bookings')
+      .insert([
+        {
+          room_id: formData.roomId,
+          room_name: selectedRoom.name,
+          guest_name: formData.guestName,
+          guest_phone: formData.guestPhone,
+          check_in: formatDate(selectedDates.checkIn),
+          check_out: formatDate(selectedDates.checkOut),
+          status: 'confirmed'
+        }
+      ])
 
-    const updatedBookings = [...bookings, newBooking]
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings))
-    setBookings(updatedBookings)
+    if (error) {
+      console.error('Error creating booking:', error)
+      alert('예약에 실패했습니다.')
+      return
+    }
 
     alert('예약이 완료되었습니다!')
     setShowBookingForm(false)
     setSelectedDates({ checkIn: null, checkOut: null })
     setFormData({ guestName: '', guestPhone: '', roomId: rooms[0]?.id || '' })
+    loadData() // Reload data
   }
 
   const handleCancelSelection = () => {
