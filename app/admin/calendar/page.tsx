@@ -311,92 +311,128 @@ export default function AdminCalendar() {
 
         {/* Bookings List */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-2xl font-bold mb-6">예약 목록</h3>
+          <h3 className="text-2xl font-bold mb-6">{year}년 {monthNames[month]} 예약 목록</h3>
           
-          {bookings.filter(b => b.status === 'confirmed').length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              현재 예약 내역이 없습니다.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {bookings
-                .filter(b => b.status === 'confirmed')
-                .sort((a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime())
-                .map((booking) => {
-                  const nights = calculateNights(booking.checkIn, booking.checkOut)
-                  const totalPrice = calculateBookingPrice(booking)
-                  
-                  return (
-                    <div key={booking.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h4 className="text-xl font-bold text-gray-900">{booking.roomName}</h4>
-                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                              예약확정
-                            </span>
+          {(() => {
+            const monthStart = new Date(year, month, 1)
+            const monthEnd = new Date(year, month + 1, 0)
+            monthStart.setHours(0, 0, 0, 0)
+            monthEnd.setHours(23, 59, 59, 999)
+            
+            const monthlyConfirmedBookings = bookings.filter(b => {
+              if (b.status !== 'confirmed') return false
+              const checkIn = new Date(b.checkIn)
+              checkIn.setHours(0, 0, 0, 0)
+              return checkIn >= monthStart && checkIn <= monthEnd
+            })
+            
+            return monthlyConfirmedBookings.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                {year}년 {monthNames[month]}에 예약 내역이 없습니다.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {monthlyConfirmedBookings
+                  .sort((a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime())
+                  .map((booking) => {
+                    const nights = calculateNights(booking.checkIn, booking.checkOut)
+                    const totalPrice = calculateBookingPrice(booking)
+                    
+                    return (
+                      <div key={booking.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h4 className="text-xl font-bold text-gray-900">{booking.roomName}</h4>
+                              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                예약확정
+                              </span>
+                            </div>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <p>
+                                <span className="font-semibold">예약자:</span> {booking.guestName} ({booking.guestPhone})
+                              </p>
+                              <p>
+                                <span className="font-semibold">체크인:</span> {booking.checkIn} → <span className="font-semibold">체크아웃:</span> {booking.checkOut}
+                              </p>
+                              <p>
+                                <span className="font-semibold">숙박일수:</span> {nights}박
+                              </p>
+                            </div>
                           </div>
-                          <div className="space-y-1 text-sm text-gray-600">
-                            <p>
-                              <span className="font-semibold">예약자:</span> {booking.guestName} ({booking.guestPhone})
+                          
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-green-600 mb-3">
+                              {totalPrice.toLocaleString()}원
                             </p>
-                            <p>
-                              <span className="font-semibold">체크인:</span> {booking.checkIn} → <span className="font-semibold">체크아웃:</span> {booking.checkOut}
-                            </p>
-                            <p>
-                              <span className="font-semibold">숙박일수:</span> {nights}박
-                            </p>
+                            <button
+                              onClick={() => handleCancelBooking(booking.id)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>예약 취소</span>
+                            </button>
                           </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-green-600 mb-3">
-                            {totalPrice.toLocaleString()}원
-                          </p>
-                          <button
-                            onClick={() => handleCancelBooking(booking.id)}
-                            className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            <span>예약 취소</span>
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-            </div>
-          )}
+                    )
+                  })}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Cancelled Bookings */}
-        {bookings.filter(b => b.status === 'cancelled').length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
-            <h3 className="text-2xl font-bold mb-6 text-gray-600">취소된 예약</h3>
-            <div className="space-y-4">
-              {bookings
-                .filter(b => b.status === 'cancelled')
-                .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime())
-                .map((booking) => (
-                  <div key={booking.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="text-lg font-bold text-gray-700">{booking.roomName}</h4>
-                          <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                            예약취소
-                          </span>
+        {(() => {
+          const monthStart = new Date(year, month, 1)
+          const monthEnd = new Date(year, month + 1, 0)
+          monthStart.setHours(0, 0, 0, 0)
+          monthEnd.setHours(23, 59, 59, 999)
+          
+          const monthlyCancelledBookings = bookings.filter(b => {
+            if (b.status !== 'cancelled') return false
+            const checkIn = new Date(b.checkIn)
+            checkIn.setHours(0, 0, 0, 0)
+            return checkIn >= monthStart && checkIn <= monthEnd
+          })
+          
+          return monthlyCancelledBookings.length > 0 && (
+            <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+              <h3 className="text-2xl font-bold mb-6 text-gray-600">{year}년 {monthNames[month]} 취소된 예약</h3>
+              <div className="space-y-4">
+                {monthlyCancelledBookings
+                  .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime())
+                  .map((booking) => {
+                    const nights = calculateNights(booking.checkIn, booking.checkOut)
+                    const totalPrice = calculateBookingPrice(booking)
+                    
+                    return (
+                      <div key={booking.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h4 className="text-lg font-bold text-gray-700">{booking.roomName}</h4>
+                              <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                                예약취소
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              예약자: {booking.guestName} | 체크인: {booking.checkIn} → 체크아웃: {booking.checkOut} | {nights}박
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-gray-500 line-through">
+                              {totalPrice.toLocaleString()}원
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          예약자: {booking.guestName} | 체크인: {booking.checkIn} → 체크아웃: {booking.checkOut}
-                        </p>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    )
+                  })}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )
