@@ -1,5 +1,5 @@
 {
-  "name": "hotel-paradise",
+  "name": "sokcho-apartment",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,9 @@
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "lucide-react": "^0.302.0"
+    "lucide-react": "^0.302.0",
+    "react-calendar": "^4.8.0",
+    "date-fns": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

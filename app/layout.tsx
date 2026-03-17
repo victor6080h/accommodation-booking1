@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Hotel Paradise - 럭셔리 숙박의 새로운 기준',
-  description: '최고급 시설과 프리미엄 서비스를 제공하는 호텔 파라다이스',
+  title: '속초 아파트 - 편안한 숙소 예약',
+  description: '속초의 깨끗하고 편안한 아파트를 예약하세요',
 }
 
 export default function RootLayout({
