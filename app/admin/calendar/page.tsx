@@ -2,7 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Home, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Home, ChevronLeft, ChevronRight, XCircle, DollarSign, TrendingUp } from 'lucide-react'
+
+interface Room {
+  id: string
+  name: string
+  roomNumber: string
+  price: number
+  capacity: number
+  description: string
+}
 
 interface Booking {
   id: string
@@ -13,12 +22,13 @@ interface Booking {
   checkIn: string
   checkOut: string
   status: 'confirmed' | 'completed' | 'cancelled'
+  totalPrice?: number
 }
 
 export default function AdminCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [rooms, setRooms] = useState<any[]>([])
+  const [rooms, setRooms] = useState<Room[]>([])
 
   useEffect(() => {
     // Load bookings from localStorage
@@ -55,13 +65,75 @@ export default function AdminCalendar() {
     setCurrentDate(new Date(year, month + 1, 1))
   }
 
+  // 예약 취소 함수
+  const handleCancelBooking = (bookingId: string) => {
+    if (!confirm('정말 이 예약을 취소하시겠습니까?')) {
+      return
+    }
+
+    const updatedBookings = bookings.map(booking =>
+      booking.id === bookingId
+        ? { ...booking, status: 'cancelled' as const }
+        : booking
+    )
+
+    localStorage.setItem('bookings', JSON.stringify(updatedBookings))
+    setBookings(updatedBookings)
+    alert('예약이 취소되었습니다.')
+  }
+
+  // 숙박일수 계산
+  const calculateNights = (checkIn: string, checkOut: string): number => {
+    const start = new Date(checkIn)
+    const end = new Date(checkOut)
+    const diffTime = Math.abs(end.getTime() - start.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  // 예약 총 금액 계산
+  const calculateBookingPrice = (booking: Booking): number => {
+    const room = rooms.find(r => r.id === booking.roomId)
+    if (!room) return 0
+    
+    const nights = calculateNights(booking.checkIn, booking.checkOut)
+    return room.price * nights
+  }
+
+  // 월별 매출 계산
+  const calculateMonthlyRevenue = () => {
+    const monthStart = new Date(year, month, 1)
+    const monthEnd = new Date(year, month + 1, 0)
+
+    return bookings
+      .filter(booking => {
+        if (booking.status !== 'confirmed') return false
+        const checkIn = new Date(booking.checkIn)
+        return checkIn >= monthStart && checkIn <= monthEnd
+      })
+      .reduce((total, booking) => {
+        return total + calculateBookingPrice(booking)
+      }, 0)
+  }
+
+  // 월별 예약 건수
+  const getMonthlyBookingCount = () => {
+    const monthStart = new Date(year, month, 1)
+    const monthEnd = new Date(year, month + 1, 0)
+
+    return bookings.filter(booking => {
+      if (booking.status !== 'confirmed') return false
+      const checkIn = new Date(booking.checkIn)
+      return checkIn >= monthStart && checkIn <= monthEnd
+    }).length
+  }
+
   const isDateBooked = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return bookings.some(booking => {
       const checkIn = new Date(booking.checkIn)
       const checkOut = new Date(booking.checkOut)
       const currentDate = new Date(dateStr)
-      // 체크인부터 체크아웃까지 모두 예약완료로 표시 (중복 예약 방지)
       return currentDate >= checkIn && currentDate <= checkOut && booking.status === 'confirmed'
     })
   }
@@ -72,7 +144,6 @@ export default function AdminCalendar() {
       const checkIn = new Date(booking.checkIn)
       const checkOut = new Date(booking.checkOut)
       const currentDate = new Date(dateStr)
-      // 체크인부터 체크아웃까지 모두 예약완료로 표시 (중복 예약 방지)
       return currentDate >= checkIn && currentDate <= checkOut && booking.status === 'confirmed'
     })
   }
@@ -80,13 +151,14 @@ export default function AdminCalendar() {
   const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
   const dayNames = ['일', '월', '화', '수', '목', '금', '토']
 
+  const monthlyRevenue = calculateMonthlyRevenue()
+  const monthlyBookings = getMonthlyBookingCount()
+
   const days = []
-  // Empty cells for days before the first day of the month
   for (let i = 0; i < startingDayOfWeek; i++) {
     days.push(<div key={`empty-${i}`} className="h-24 bg-gray-50"></div>)
   }
 
-  // Days of the month
   for (let day = 1; day <= daysInMonth; day++) {
     const isBooked = isDateBooked(day)
     const booking = getBookingForDate(day)
@@ -147,6 +219,33 @@ export default function AdminCalendar() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Monthly Revenue Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">이번 달 매출</p>
+                <p className="text-3xl font-bold mt-2">{monthlyRevenue.toLocaleString()}원</p>
+              </div>
+              <div className="bg-white/20 p-4 rounded-full">
+                <DollarSign className="w-8 h-8" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">이번 달 예약 건수</p>
+                <p className="text-3xl font-bold mt-2">{monthlyBookings}건</p>
+              </div>
+              <div className="bg-white/20 p-4 rounded-full">
+                <TrendingUp className="w-8 h-8" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Calendar Header */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
@@ -183,7 +282,6 @@ export default function AdminCalendar() {
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-0 border border-gray-200 rounded-lg overflow-hidden">
-            {/* Day headers */}
             {dayNames.map((dayName, index) => (
               <div
                 key={dayName}
@@ -195,7 +293,6 @@ export default function AdminCalendar() {
               </div>
             ))}
             
-            {/* Calendar days */}
             {days}
           </div>
         </div>
@@ -213,27 +310,81 @@ export default function AdminCalendar() {
               {bookings
                 .filter(b => b.status === 'confirmed')
                 .sort((a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime())
+                .map((booking) => {
+                  const nights = calculateNights(booking.checkIn, booking.checkOut)
+                  const totalPrice = calculateBookingPrice(booking)
+                  
+                  return (
+                    <div key={booking.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="text-xl font-bold text-gray-900">{booking.roomName}</h4>
+                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                              예약확정
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-sm text-gray-600">
+                            <p>
+                              <span className="font-semibold">예약자:</span> {booking.guestName} ({booking.guestPhone})
+                            </p>
+                            <p>
+                              <span className="font-semibold">체크인:</span> {booking.checkIn} → <span className="font-semibold">체크아웃:</span> {booking.checkOut}
+                            </p>
+                            <p>
+                              <span className="font-semibold">숙박일수:</span> {nights}박
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-green-600 mb-3">
+                            {totalPrice.toLocaleString()}원
+                          </p>
+                          <button
+                            onClick={() => handleCancelBooking(booking.id)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>예약 취소</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+        </div>
+
+        {/* Cancelled Bookings */}
+        {bookings.filter(b => b.status === 'cancelled').length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+            <h3 className="text-2xl font-bold mb-6 text-gray-600">취소된 예약</h3>
+            <div className="space-y-4">
+              {bookings
+                .filter(b => b.status === 'cancelled')
+                .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime())
                 .map((booking) => (
-                  <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition">
+                  <div key={booking.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="text-lg font-bold text-gray-900">{booking.roomName}</h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                          예약자: {booking.guestName} ({booking.guestPhone})
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          체크인: {booking.checkIn} → 체크아웃: {booking.checkOut}
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h4 className="text-lg font-bold text-gray-700">{booking.roomName}</h4>
+                          <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                            예약취소
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          예약자: {booking.guestName} | 체크인: {booking.checkIn} → 체크아웃: {booking.checkOut}
                         </p>
                       </div>
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                        예약확정
-                      </span>
                     </div>
                   </div>
                 ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
