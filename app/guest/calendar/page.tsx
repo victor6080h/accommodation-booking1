@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
+import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react'
 
 interface Room {
   id: string
@@ -76,38 +76,91 @@ export default function GuestCalendar() {
     setCurrentDate(new Date(year, month + 1, 1))
   }
 
+  // 날짜를 YYYY-MM-DD 형식으로 변환
+  const formatDate = (date: Date): string => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  // 날짜를 비교 가능한 숫자로 변환
+  const dateToNumber = (date: Date): number => {
+    const d = new Date(date)
+    d.setHours(0, 0, 0, 0)
+    return d.getTime()
+  }
+
   const isDateBooked = (day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const checkDate = new Date(year, month, day)
+    const checkDateNum = dateToNumber(checkDate)
+    
     return bookings.some(booking => {
+      if (booking.status !== 'confirmed') return false
+      
       const checkIn = new Date(booking.checkIn)
       const checkOut = new Date(booking.checkOut)
-      const currentDate = new Date(dateStr)
-      return currentDate >= checkIn && currentDate < checkOut && booking.status === 'confirmed'
+      const checkInNum = dateToNumber(checkIn)
+      const checkOutNum = dateToNumber(checkOut)
+      
+      return checkDateNum >= checkInNum && checkDateNum < checkOutNum
     })
   }
 
   const isPastDate = (day: number) => {
-    const dateStr = new Date(year, month, day)
+    const checkDate = new Date(year, month, day)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return dateStr < today
+    checkDate.setHours(0, 0, 0, 0)
+    return checkDate < today
   }
 
   const handleDateClick = (day: number) => {
-    if (isPastDate(day) || isDateBooked(day)) return
+    if (isPastDate(day) || isDateBooked(day)) {
+      return
+    }
 
     const clickedDate = new Date(year, month, day)
+    clickedDate.setHours(0, 0, 0, 0)
 
-    if (!selectedDates.checkIn || (selectedDates.checkIn && selectedDates.checkOut)) {
-      // Start new selection
+    // 체크인 날짜가 없거나, 이미 체크인/체크아웃이 모두 선택된 경우
+    if (!selectedDates.checkIn || selectedDates.checkOut) {
       setSelectedDates({ checkIn: clickedDate, checkOut: null })
+      setShowBookingForm(false)
     } else {
-      // Complete selection
-      if (clickedDate > selectedDates.checkIn) {
-        setSelectedDates({ ...selectedDates, checkOut: clickedDate })
-        setShowBookingForm(true)
+      // 체크인이 있고 체크아웃이 없는 경우
+      const checkInNum = dateToNumber(selectedDates.checkIn)
+      const clickedNum = dateToNumber(clickedDate)
+      
+      if (clickedNum > checkInNum) {
+        // 체크아웃이 체크인보다 나중 날짜인 경우
+        // 중간에 예약된 날짜가 있는지 확인
+        let hasBookedDateInRange = false
+        const tempDate = new Date(selectedDates.checkIn)
+        
+        while (dateToNumber(tempDate) < clickedNum) {
+          tempDate.setDate(tempDate.getDate() + 1)
+          if (isDateBooked(tempDate.getDate()) && tempDate.getMonth() === month && tempDate.getFullYear() === year) {
+            hasBookedDateInRange = true
+            break
+          }
+        }
+        
+        if (hasBookedDateInRange) {
+          alert('선택한 기간 내에 이미 예약된 날짜가 있습니다.')
+          setSelectedDates({ checkIn: clickedDate, checkOut: null })
+        } else {
+          setSelectedDates({ checkIn: selectedDates.checkIn, checkOut: clickedDate })
+          setShowBookingForm(true)
+        }
+      } else if (clickedNum === checkInNum) {
+        // 같은 날짜를 다시 클릭한 경우
+        setSelectedDates({ checkIn: null, checkOut: null })
+        setShowBookingForm(false)
       } else {
+        // 체크아웃이 체크인보다 빠른 경우, 새로운 체크인으로 설정
         setSelectedDates({ checkIn: clickedDate, checkOut: null })
+        setShowBookingForm(false)
       }
     }
   }
@@ -130,8 +183,8 @@ export default function GuestCalendar() {
       roomName: selectedRoom.name,
       guestName: formData.guestName,
       guestPhone: formData.guestPhone,
-      checkIn: selectedDates.checkIn.toISOString().split('T')[0],
-      checkOut: selectedDates.checkOut.toISOString().split('T')[0],
+      checkIn: formatDate(selectedDates.checkIn),
+      checkOut: formatDate(selectedDates.checkOut),
       status: 'confirmed'
     }
 
@@ -145,27 +198,40 @@ export default function GuestCalendar() {
     setFormData({ guestName: '', guestPhone: '', roomId: rooms[0]?.id || '' })
   }
 
+  const handleCancelSelection = () => {
+    setSelectedDates({ checkIn: null, checkOut: null })
+    setShowBookingForm(false)
+  }
+
   const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
   const dayNames = ['일', '월', '화', '수', '목', '금', '토']
 
   const isDateInRange = (day: number) => {
     if (!selectedDates.checkIn) return false
-    const date = new Date(year, month, day)
+    
+    const checkDate = new Date(year, month, day)
+    const checkDateNum = dateToNumber(checkDate)
+    const checkInNum = dateToNumber(selectedDates.checkIn)
+    
     if (selectedDates.checkOut) {
-      return date >= selectedDates.checkIn && date <= selectedDates.checkOut
+      const checkOutNum = dateToNumber(selectedDates.checkOut)
+      return checkDateNum >= checkInNum && checkDateNum <= checkOutNum
     }
-    return date.getTime() === selectedDates.checkIn.getTime()
+    
+    return checkDateNum === checkInNum
   }
 
   const days = []
   for (let i = 0; i < startingDayOfWeek; i++) {
-    days.push(<div key={`empty-${i}`} className="h-24 bg-gray-50"></div>)
+    days.push(<div key={`empty-${i}`} className="h-28 bg-gray-50"></div>)
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
     const isBooked = isDateBooked(day)
     const isPast = isPastDate(day)
     const isInRange = isDateInRange(day)
+    const isCheckIn = selectedDates.checkIn && dateToNumber(new Date(year, month, day)) === dateToNumber(selectedDates.checkIn)
+    const isCheckOut = selectedDates.checkOut && dateToNumber(new Date(year, month, day)) === dateToNumber(selectedDates.checkOut)
     const isToday = new Date().getDate() === day && 
                     new Date().getMonth() === month && 
                     new Date().getFullYear() === year
@@ -174,7 +240,7 @@ export default function GuestCalendar() {
       <div
         key={day}
         onClick={() => handleDateClick(day)}
-        className={`h-24 border border-gray-200 p-2 transition ${
+        className={`h-28 border border-gray-200 p-2 transition ${
           isBooked || isPast
             ? 'bg-gray-200 cursor-not-allowed'
             : isInRange
@@ -182,29 +248,40 @@ export default function GuestCalendar() {
             : 'bg-white cursor-pointer hover:bg-gray-50'
         } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
       >
-        <div className={`text-sm font-semibold ${
+        <div className={`text-sm font-semibold mb-1 ${
           isPast ? 'text-gray-400' : isToday ? 'text-blue-600' : 'text-gray-900'
         }`}>
           {day}
         </div>
-        {isBooked ? (
-          <div className="mt-1">
-            <div className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
-              예약완료
-            </div>
+        
+        {isCheckIn && (
+          <div className="text-xs font-bold text-blue-700 bg-blue-200 px-2 py-1 rounded mb-1">
+            체크인
           </div>
-        ) : isPast ? (
-          <div className="mt-1">
-            <div className="text-xs font-medium text-gray-500 px-2 py-1">
-              지난날짜
-            </div>
+        )}
+        
+        {isCheckOut && (
+          <div className="text-xs font-bold text-blue-700 bg-blue-200 px-2 py-1 rounded mb-1">
+            체크아웃
           </div>
-        ) : (
-          <div className="mt-1">
-            <div className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-              예약가능
-            </div>
-          </div>
+        )}
+        
+        {!isCheckIn && !isCheckOut && (
+          <>
+            {isBooked ? (
+              <div className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
+                예약완료
+              </div>
+            ) : isPast ? (
+              <div className="text-xs font-medium text-gray-500 px-2 py-1">
+                지난날짜
+              </div>
+            ) : (
+              <div className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+                예약가능
+              </div>
+            )}
+          </>
         )}
       </div>
     )
@@ -241,14 +318,53 @@ export default function GuestCalendar() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Instructions */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-4">예약 방법</h2>
-          <div className="space-y-2 text-gray-600">
-            <p>1. 캘린더에서 체크인 날짜를 클릭하세요</p>
-            <p>2. 체크아웃 날짜를 클릭하세요</p>
-            <p>3. 예약자 정보를 입력하고 예약을 완료하세요</p>
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl shadow-lg p-6 mb-6 border border-blue-100">
+          <h2 className="text-2xl font-bold mb-4 text-blue-900">📅 예약 방법</h2>
+          <div className="space-y-2 text-gray-700">
+            <p className="flex items-center">
+              <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 text-sm">1</span>
+              캘린더에서 <strong className="mx-1">체크인 날짜</strong>를 클릭하세요
+            </p>
+            <p className="flex items-center">
+              <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 text-sm">2</span>
+              <strong className="mx-1">체크아웃 날짜</strong>를 클릭하세요
+            </p>
+            <p className="flex items-center">
+              <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 text-sm">3</span>
+              예약자 정보를 입력하고 <strong className="mx-1">예약을 완료</strong>하세요
+            </p>
           </div>
         </div>
+
+        {/* Selected Dates Display */}
+        {selectedDates.checkIn && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border-2 border-blue-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <CalendarIcon className="w-8 h-8 text-blue-600" />
+                <div>
+                  <p className="text-lg font-bold text-gray-900">선택된 날짜</p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">체크인:</span> {selectedDates.checkIn.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {selectedDates.checkOut && (
+                      <>
+                        {' → '}
+                        <span className="font-semibold">체크아웃:</span> {selectedDates.checkOut.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCancelSelection}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                title="선택 취소"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Calendar */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
@@ -273,7 +389,7 @@ export default function GuestCalendar() {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center space-x-6 mb-6">
+          <div className="flex items-center justify-center space-x-6 mb-6 flex-wrap gap-2">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
               <span className="text-sm text-gray-600">예약가능</span>
@@ -284,24 +400,9 @@ export default function GuestCalendar() {
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-              <span className="text-sm text-gray-600">선택된 날짜</span>
+              <span className="text-sm text-gray-600">선택된 기간</span>
             </div>
           </div>
-
-          {/* Selected dates display */}
-          {selectedDates.checkIn && (
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <p className="text-center text-lg">
-                <span className="font-bold">체크인:</span> {selectedDates.checkIn.toLocaleDateString('ko-KR')}
-                {selectedDates.checkOut && (
-                  <>
-                    {' → '}
-                    <span className="font-bold">체크아웃:</span> {selectedDates.checkOut.toLocaleDateString('ko-KR')}
-                  </>
-                )}
-              </p>
-            </div>
-          )}
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-0 border border-gray-200 rounded-lg overflow-hidden">
@@ -322,8 +423,8 @@ export default function GuestCalendar() {
 
         {/* Booking Form */}
         {showBookingForm && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-6">예약 정보 입력</h2>
+          <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-300">
+            <h2 className="text-2xl font-bold mb-6">✍️ 예약 정보 입력</h2>
             
             <div className="space-y-4">
               {rooms.length > 0 && (
@@ -334,7 +435,7 @@ export default function GuestCalendar() {
                   <select
                     value={formData.roomId}
                     onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                   >
                     {rooms.map(room => (
                       <option key={room.id} value={room.id}>
@@ -353,7 +454,7 @@ export default function GuestCalendar() {
                   type="text"
                   value={formData.guestName}
                   onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                   placeholder="홍길동"
                 />
               </div>
@@ -366,27 +467,27 @@ export default function GuestCalendar() {
                   type="tel"
                   value={formData.guestPhone}
                   onChange={(e) => setFormData({ ...formData, guestPhone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                   placeholder="010-1234-5678"
                 />
               </div>
 
-              <div className="flex space-x-4">
+              <div className="flex space-x-4 pt-4">
                 <button
                   onClick={() => {
                     setShowBookingForm(false)
                     setSelectedDates({ checkIn: null, checkOut: null })
                   }}
-                  className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                  className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-lg font-medium"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleBooking}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2"
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 text-lg font-medium"
                 >
                   <CalendarIcon className="w-5 h-5" />
-                  <span>예약하기</span>
+                  <span>예약 완료하기</span>
                 </button>
               </div>
             </div>
@@ -394,9 +495,9 @@ export default function GuestCalendar() {
         )}
 
         {rooms.length === 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-            <p className="text-yellow-800">
-              현재 등록된 객실이 없습니다. 관리자에게 문의해주세요.
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 text-center">
+            <p className="text-yellow-800 text-lg">
+              ⚠️ 현재 등록된 객실이 없습니다. 관리자에게 문의해주세요.
             </p>
           </div>
         )}
