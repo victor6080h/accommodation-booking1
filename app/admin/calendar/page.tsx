@@ -104,11 +104,16 @@ export default function AdminCalendar() {
   const calculateMonthlyRevenue = () => {
     const monthStart = new Date(year, month, 1)
     const monthEnd = new Date(year, month + 1, 0)
+    
+    // 시간 정보 제거
+    monthStart.setHours(0, 0, 0, 0)
+    monthEnd.setHours(23, 59, 59, 999)
 
     return bookings
       .filter(booking => {
         if (booking.status !== 'confirmed') return false
         const checkIn = new Date(booking.checkIn)
+        checkIn.setHours(0, 0, 0, 0)
         return checkIn >= monthStart && checkIn <= monthEnd
       })
       .reduce((total, booking) => {
@@ -120,10 +125,15 @@ export default function AdminCalendar() {
   const getMonthlyBookingCount = () => {
     const monthStart = new Date(year, month, 1)
     const monthEnd = new Date(year, month + 1, 0)
+    
+    // 시간 정보 제거
+    monthStart.setHours(0, 0, 0, 0)
+    monthEnd.setHours(23, 59, 59, 999)
 
     return bookings.filter(booking => {
       if (booking.status !== 'confirmed') return false
       const checkIn = new Date(booking.checkIn)
+      checkIn.setHours(0, 0, 0, 0)
       return checkIn >= monthStart && checkIn <= monthEnd
     }).length
   }
@@ -224,8 +234,9 @@ export default function AdminCalendar() {
           <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">이번 달 매출</p>
+                <p className="text-green-100 text-sm font-medium">{year}년 {monthNames[month]} 매출</p>
                 <p className="text-3xl font-bold mt-2">{monthlyRevenue.toLocaleString()}원</p>
+                <p className="text-green-100 text-xs mt-1">체크인 기준</p>
               </div>
               <div className="bg-white/20 p-4 rounded-full">
                 <DollarSign className="w-8 h-8" />
@@ -236,8 +247,9 @@ export default function AdminCalendar() {
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">이번 달 예약 건수</p>
+                <p className="text-blue-100 text-sm font-medium">{year}년 {monthNames[month]} 예약 건수</p>
                 <p className="text-3xl font-bold mt-2">{monthlyBookings}건</p>
+                <p className="text-blue-100 text-xs mt-1">확정된 예약만 포함</p>
               </div>
               <div className="bg-white/20 p-4 rounded-full">
                 <TrendingUp className="w-8 h-8" />
