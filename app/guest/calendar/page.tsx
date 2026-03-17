@@ -103,7 +103,8 @@ export default function GuestCalendar() {
       const checkInNum = dateToNumber(checkIn)
       const checkOutNum = dateToNumber(checkOut)
       
-      return checkDateNum >= checkInNum && checkDateNum < checkOutNum
+      // 체크인부터 체크아웃까지 모두 예약완료로 표시 (중복 예약 방지)
+      return checkDateNum >= checkInNum && checkDateNum <= checkOutNum
     })
   }
 

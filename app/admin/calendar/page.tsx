@@ -61,7 +61,8 @@ export default function AdminCalendar() {
       const checkIn = new Date(booking.checkIn)
       const checkOut = new Date(booking.checkOut)
       const currentDate = new Date(dateStr)
-      return currentDate >= checkIn && currentDate < checkOut && booking.status === 'confirmed'
+      // 체크인부터 체크아웃까지 모두 예약완료로 표시 (중복 예약 방지)
+      return currentDate >= checkIn && currentDate <= checkOut && booking.status === 'confirmed'
     })
   }
 
@@ -71,7 +72,8 @@ export default function AdminCalendar() {
       const checkIn = new Date(booking.checkIn)
       const checkOut = new Date(booking.checkOut)
       const currentDate = new Date(dateStr)
-      return currentDate >= checkIn && currentDate < checkOut && booking.status === 'confirmed'
+      // 체크인부터 체크아웃까지 모두 예약완료로 표시 (중복 예약 방지)
+      return currentDate >= checkIn && currentDate <= checkOut && booking.status === 'confirmed'
     })
   }
 
