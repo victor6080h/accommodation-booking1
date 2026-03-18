@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, XCircle, DollarSign, TrendingUp } from 'lucide-react'
-import { supabase, Room as SupabaseRoom, Booking as SupabaseBooking } from '@/lib/supabase'
+import { supabase, Room as SupabaseRoom, Booking as SupabaseBooking, DatePricing } from '@/lib/supabase'
 
 interface Room {
   id: string
@@ -30,10 +30,15 @@ export default function AdminCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [bookings, setBookings] = useState<Booking[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
+  const [datePricing, setDatePricing] = useState<DatePricing[]>([])
 
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    loadDatePricing()
+  }, [currentDate])
 
   const loadData = async () => {
     // Load bookings from Supabase
@@ -72,6 +77,26 @@ export default function AdminCalendar() {
         description: r.description || ''
       }))
       setRooms(formattedRooms)
+    }
+  }
+
+  const loadDatePricing = async () => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    
+    // 해당 월의 모든 일자별 가격 로드
+    const startDate = new Date(year, month, 1)
+    const endDate = new Date(year, month + 1, 0)
+
+    const { data, error } = await supabase
+      .from('date_pricing')
+      .select('*')
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
+      .eq('is_active', true)
+
+    if (!error && data) {
+      setDatePricing(data as DatePricing[])
     }
   }
 
@@ -126,13 +151,37 @@ export default function AdminCalendar() {
     return diffDays
   }
 
-  // 예약 총 금액 계산
-  const calculateBookingPrice = (booking: Booking): number => {
-    const room = rooms.find(r => r.id === booking.roomId)
-    if (!room) return 0
+  // 특정 날짜의 가격 가져오기 (일자별 가격 우선, 없으면 기본 가격)
+  const getPriceForDate = (roomId: string, dateStr: string): number => {
+    // 일자별 가격 확인
+    const pricing = datePricing.find(p => p.room_id === roomId && p.date === dateStr)
+    if (pricing) {
+      return pricing.price
+    }
     
-    const nights = calculateNights(booking.checkIn, booking.checkOut)
-    return room.price * nights
+    // 없으면 객실 기본 가격
+    const room = rooms.find(r => r.id === roomId)
+    return room ? room.price : 0
+  }
+
+  // 예약 총 금액 계산 (일자별 가격 반영)
+  const calculateBookingPrice = (booking: Booking): number => {
+    const checkIn = new Date(booking.checkIn)
+    const checkOut = new Date(booking.checkOut)
+    
+    let totalPrice = 0
+    const currentDate = new Date(checkIn)
+    
+    // 체크인부터 체크아웃 전날까지 각 날짜의 가격을 합산
+    while (currentDate < checkOut) {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      const dayPrice = getPriceForDate(booking.roomId, dateStr)
+      totalPrice += dayPrice
+      
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    return totalPrice
   }
 
   // 월별 매출 계산
