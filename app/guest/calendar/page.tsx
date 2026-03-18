@@ -32,17 +32,7 @@ export default function GuestCalendar() {
       .order('check_in', { ascending: true })
 
     if (bookingsData) {
-      const formattedBookings = bookingsData.map(b => ({
-        id: b.id,
-        roomId: b.room_id,
-        roomName: b.room_name,
-        guestName: b.guest_name,
-        guestPhone: b.guest_phone,
-        checkIn: b.check_in,
-        checkOut: b.check_out,
-        status: b.status as 'confirmed' | 'completed' | 'cancelled'
-      }))
-      setBookings(formattedBookings)
+      setBookings(bookingsData as Booking[])
     }
 
     // Load rooms from Supabase
@@ -52,17 +42,9 @@ export default function GuestCalendar() {
       .order('created_at', { ascending: true })
 
     if (roomsData) {
-      const formattedRooms = roomsData.map(r => ({
-        id: r.id,
-        name: r.name,
-        roomNumber: r.room_number,
-        price: r.price,
-        capacity: r.capacity,
-        description: r.description || ''
-      }))
-      setRooms(formattedRooms)
-      if (formattedRooms.length > 0) {
-        setFormData(prev => ({ ...prev, roomId: formattedRooms[0].id }))
+      setRooms(roomsData as Room[])
+      if (roomsData.length > 0) {
+        setFormData(prev => ({ ...prev, roomId: roomsData[0].id }))
       }
     }
   }
@@ -110,8 +92,8 @@ export default function GuestCalendar() {
     return bookings.some(booking => {
       if (booking.status !== 'confirmed') return false
       
-      const checkIn = new Date(booking.checkIn)
-      const checkOut = new Date(booking.checkOut)
+      const checkIn = new Date(booking.check_in)
+      const checkOut = new Date(booking.check_out)
       const checkInNum = dateToNumber(checkIn)
       const checkOutNum = dateToNumber(checkOut)
       
@@ -458,7 +440,7 @@ export default function GuestCalendar() {
                   >
                     {rooms.map(room => (
                       <option key={room.id} value={room.id}>
-                        {room.name} ({room.roomNumber}) - {room.price.toLocaleString()}원/박
+                        {room.name} ({room.room_number}) - {room.price.toLocaleString()}원/박
                       </option>
                     ))}
                   </select>
