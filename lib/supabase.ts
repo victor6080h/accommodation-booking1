@@ -33,3 +33,25 @@ export interface GuideContent {
   content: string
   updated_at?: string
 }
+
+export interface Feature {
+  id: string
+  icon: string
+  title: string
+  description: string
+  display_order: number
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ApartmentImage {
+  id: string
+  image_url: string
+  title?: string
+  description?: string
+  display_order: number
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}

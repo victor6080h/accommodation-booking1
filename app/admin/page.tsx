@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2 } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon } from 'lucide-react'
 
 export default function AdminDashboard() {
   return (
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
       {/* Dashboard Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* 객실 관리 */}
           <Link href="/admin/rooms">
             <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-blue-500">
@@ -71,6 +71,32 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">이용안내 관리</h2>
               <p className="text-gray-600 text-center">
                 객실 이용안내 작성 및 수정
+              </p>
+            </div>
+          </Link>
+
+          {/* 아파트 특징 관리 */}
+          <Link href="/admin/features">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-yellow-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4 mx-auto">
+                <Sparkles className="w-8 h-8 text-yellow-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">아파트 특징</h2>
+              <p className="text-gray-600 text-center">
+                메인 페이지 특징 내용 관리
+              </p>
+            </div>
+          </Link>
+
+          {/* 아파트 사진 관리 */}
+          <Link href="/admin/images">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-pink-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-pink-100 rounded-full mb-4 mx-auto">
+                <ImageIcon className="w-8 h-8 text-pink-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">아파트 사진</h2>
+              <p className="text-gray-600 text-center">
+                메인 페이지 사진 업로드 및 관리
               </p>
             </div>
           </Link>

@@ -1,9 +1,42 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Calendar, MapPin, Users, Home } from 'lucide-react'
+import { Calendar, MapPin, Home } from 'lucide-react'
+import { supabase, Feature, ApartmentImage } from '@/lib/supabase'
 
 export default function HomePage() {
+  const [features, setFeatures] = useState<Feature[]>([])
+  const [images, setImages] = useState<ApartmentImage[]>([])
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    // Load features
+    const { data: featuresData } = await supabase
+      .from('features')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+
+    if (featuresData) {
+      setFeatures(featuresData)
+    }
+
+    // Load images
+    const { data: imagesData } = await supabase
+      .from('apartment_images')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+
+    if (imagesData) {
+      setImages(imagesData)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -60,27 +93,60 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">아파트 특징</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-              <div className="text-5xl mb-4">🏖️</div>
-              <h3 className="text-xl font-bold mb-2">바다 근처</h3>
-              <p className="text-gray-600">속초 해변까지 도보 10분 거리</p>
+          {features.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {features.map((feature) => (
+                <div key={feature.id} className="bg-white p-8 rounded-xl shadow-lg text-center hover:shadow-xl transition">
+                  <div className="text-5xl mb-4">{feature.icon}</div>
+                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.description}</p>
+                </div>
+              ))}
             </div>
-            
-            <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-              <div className="text-5xl mb-4">🅿️</div>
-              <h3 className="text-xl font-bold mb-2">주차 가능</h3>
-              <p className="text-gray-600">편리한 무료 주차 공간 제공</p>
+          ) : (
+            <div className="text-center text-gray-500">
+              특징을 불러오는 중입니다...
             </div>
-            
-            <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-              <div className="text-5xl mb-4">🏠</div>
-              <h3 className="text-xl font-bold mb-2">깨끗한 시설</h3>
-              <p className="text-gray-600">최근 리모델링한 깨끗한 공간</p>
-            </div>
-          </div>
+          )}
         </div>
       </section>
+
+      {/* Images Gallery */}
+      {images.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center mb-12">아파트 갤러리</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {images.map((image) => (
+                <div key={image.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                  <div className="relative h-64">
+                    <img
+                      src={image.image_url}
+                      alt={image.title || '아파트 사진'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3E이미지 로드 실패%3C/text%3E%3C/svg%3E'
+                      }}
+                    />
+                  </div>
+                  {(image.title || image.description) && (
+                    <div className="p-4">
+                      {image.title && (
+                        <h3 className="font-bold text-gray-900 mb-1">{image.title}</h3>
+                      )}
+                      {image.description && (
+                        <p className="text-sm text-gray-600">{image.description}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Location */}
       <section className="py-16 bg-white">
