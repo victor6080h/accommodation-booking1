@@ -15,6 +15,8 @@ export default function AdminImages() {
     description: ''
   })
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     loadImages()
@@ -31,6 +33,112 @@ export default function AdminImages() {
       alert('사진 목록을 불러오는데 실패했습니다.')
     } else {
       setImages(data || [])
+    }
+  }
+
+  // 이미지 파일 업로드 (Supabase Storage 사용)
+  const uploadImageToSupabase = async (file: File): Promise<string> => {
+    try {
+      // 파일명 생성 (타임스탬프 + 랜덤 문자열 + 확장자)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`
+      const filePath = `${fileName}`
+
+      // Supabase Storage에 업로드
+      const { data, error } = await supabase.storage
+        .from('apartment-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) {
+        console.error('Supabase upload error:', error)
+        throw error
+      }
+
+      // 공개 URL 가져오기
+      const { data: urlData } = supabase.storage
+        .from('apartment-images')
+        .getPublicUrl(filePath)
+
+      return urlData.publicUrl
+    } catch (error) {
+      console.error('Supabase upload error:', error)
+      throw error
+    }
+  }
+
+  // 파일 선택 핸들러
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.')
+      return
+    }
+
+    await uploadImageFile(file)
+  }
+
+  // 드래그 앤 드롭 핸들러
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    const imageFile = files.find(file => file.type.startsWith('image/'))
+
+    if (!imageFile) {
+      alert('이미지 파일을 드롭해주세요.')
+      return
+    }
+
+    if (imageFile.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.')
+      return
+    }
+
+    await uploadImageFile(imageFile)
+  }
+
+  // 이미지 업로드 공통 함수
+  const uploadImageFile = async (file: File) => {
+    setUploading(true)
+
+    try {
+      const url = await uploadImageToSupabase(file)
+      setFormData(prev => ({ ...prev, image_url: url }))
+      alert('이미지 업로드 성공!')
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -217,9 +325,63 @@ export default function AdminImages() {
           </h2>
           
           <div className="grid grid-cols-1 gap-4">
+            {/* 드래그 앤 드롭 업로드 영역 */}
+            <div
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 bg-gray-50 hover:border-gray-400'
+              }`}
+            >
+              <input
+                type="file"
+                id="fileInput"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              {uploading ? (
+                <div className="py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">업로드 중...</p>
+                </div>
+              ) : (
+                <>
+                  <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg font-medium text-gray-700 mb-2">
+                    이미지를 드래그 앤 드롭하거나
+                  </p>
+                  <label
+                    htmlFor="fileInput"
+                    className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition"
+                  >
+                    파일 선택
+                  </label>
+                  <p className="text-sm text-gray-500 mt-4">
+                    JPG, PNG, WebP • 최대 5MB
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* URL 직접 입력 (선택) */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">또는</span>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                이미지 URL *
+                이미지 URL 직접 입력
               </label>
               <input
                 type="url"
@@ -227,8 +389,8 @@ export default function AdminImages() {
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="https://example.com/image.jpg"
+                disabled={uploading}
               />
-              <p className="text-xs text-gray-500 mt-1">무료 이미지 업로드: imgur.com 또는 postimages.org 사용</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -407,11 +569,12 @@ export default function AdminImages() {
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="font-bold text-blue-900 mb-2">💡 사용 안내</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• 무료 이미지 업로드 서비스: <a href="https://imgur.com" target="_blank" rel="noopener" className="underline">imgur.com</a> 또는 <a href="https://postimages.org" target="_blank" rel="noopener" className="underline">postimages.org</a></li>
-            <li>• 이미지를 업로드한 후 "Direct link" 또는 "이미지 주소"를 복사하여 붙여넣으세요</li>
+            <li>• 드래그 앤 드롭 또는 "파일 선택" 버튼으로 이미지를 업로드하세요</li>
+            <li>• 업로드된 이미지는 Supabase Storage에 안전하게 저장됩니다</li>
             <li>• 위/아래 화살표로 표시 순서를 변경할 수 있습니다</li>
             <li>• "활성/비활성" 버튼으로 메인 페이지 표시 여부를 조절할 수 있습니다</li>
             <li>• 권장 이미지 크기: 1200x800 픽셀 (가로가 더 긴 형태)</li>
+            <li>• 최대 파일 크기: 5MB (JPG, PNG, WebP)</li>
           </ul>
         </div>
       </div>
