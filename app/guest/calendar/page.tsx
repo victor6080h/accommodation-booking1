@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react'
-import { supabase, Room, Booking } from '@/lib/supabase'
+import { supabase, Room, Booking, DatePricing } from '@/lib/supabase'
 
 export default function GuestCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [bookings, setBookings] = useState<Booking[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
+  const [datePricing, setDatePricing] = useState<DatePricing[]>([])
   const [selectedDates, setSelectedDates] = useState<{ checkIn: Date | null; checkOut: Date | null }>({
     checkIn: null,
     checkOut: null
@@ -23,6 +24,10 @@ export default function GuestCalendar() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    loadDatePricing()
+  }, [currentDate, formData.roomId])
 
   const loadData = async () => {
     // Load bookings from Supabase
@@ -46,6 +51,27 @@ export default function GuestCalendar() {
       if (roomsData.length > 0) {
         setFormData(prev => ({ ...prev, roomId: roomsData[0].id }))
       }
+    }
+  }
+
+  const loadDatePricing = async () => {
+    if (!formData.roomId) return
+
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    const startDate = new Date(year, month, 1)
+    const endDate = new Date(year, month + 1, 0)
+
+    const { data, error } = await supabase
+      .from('date_pricing')
+      .select('*')
+      .eq('room_id', formData.roomId)
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
+      .eq('is_active', true)
+
+    if (!error && data) {
+      setDatePricing(data as DatePricing[])
     }
   }
 
@@ -108,6 +134,20 @@ export default function GuestCalendar() {
     today.setHours(0, 0, 0, 0)
     checkDate.setHours(0, 0, 0, 0)
     return checkDate < today
+  }
+
+  // 일자별 가격 가져오기
+  const getPriceForDate = (day: number): number => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const pricing = datePricing.find(p => p.date === dateStr)
+    
+    if (pricing) {
+      return pricing.price
+    }
+    
+    // 특별 가격이 없으면 객실 기본 가격 반환
+    const selectedRoom = rooms.find(r => r.id === formData.roomId)
+    return selectedRoom ? selectedRoom.price : 0
   }
 
   const handleDateClick = (day: number) => {
@@ -236,6 +276,7 @@ export default function GuestCalendar() {
     const isToday = new Date().getDate() === day && 
                     new Date().getMonth() === month && 
                     new Date().getFullYear() === year
+    const dayPrice = getPriceForDate(day)
 
     days.push(
       <div
@@ -278,9 +319,14 @@ export default function GuestCalendar() {
                 지난날짜
               </div>
             ) : (
-              <div className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                예약가능
-              </div>
+              <>
+                <div className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded mb-1">
+                  예약가능
+                </div>
+                <div className="text-xs font-bold text-gray-700">
+                  {dayPrice.toLocaleString()}원
+                </div>
+              </>
             )}
           </>
         )}

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign } from 'lucide-react'
 
 export default function AdminDashboard() {
   return (
@@ -97,6 +97,19 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">아파트 사진</h2>
               <p className="text-gray-600 text-center">
                 메인 페이지 사진 업로드 및 관리
+              </p>
+            </div>
+          </Link>
+
+          {/* 일자별 가격 설정 */}
+          <Link href="/admin/pricing">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-orange-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4 mx-auto">
+                <DollarSign className="w-8 h-8 text-orange-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">일자별 가격</h2>
+              <p className="text-gray-600 text-center">
+                날짜별 특별 가격 설정 및 관리
               </p>
             </div>
           </Link>

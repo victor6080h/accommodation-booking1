@@ -55,3 +55,13 @@ export interface ApartmentImage {
   created_at?: string
   updated_at?: string
 }
+
+export interface DatePricing {
+  id: string
+  room_id: string
+  date: string
+  price: number
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}
