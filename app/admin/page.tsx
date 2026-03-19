@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin } from 'lucide-react'
 
 export default function AdminDashboard() {
   return (
@@ -110,6 +110,19 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">일자별 가격</h2>
               <p className="text-gray-600 text-center">
                 날짜별 특별 가격 설정 및 관리
+              </p>
+            </div>
+          </Link>
+
+          {/* 위치 안내 관리 */}
+          <Link href="/admin/location">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-teal-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-teal-100 rounded-full mb-4 mx-auto">
+                <MapPin className="w-8 h-8 text-teal-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">위치 안내</h2>
+              <p className="text-gray-600 text-center">
+                메인 페이지 위치 정보 수정
               </p>
             </div>
           </Link>

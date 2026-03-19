@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Calendar, MapPin, Home } from 'lucide-react'
-import { supabase, Feature, ApartmentImage } from '@/lib/supabase'
+import { supabase, Feature, ApartmentImage, LocationInfo } from '@/lib/supabase'
 
 export default function HomePage() {
   const [features, setFeatures] = useState<Feature[]>([])
   const [images, setImages] = useState<ApartmentImage[]>([])
+  const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null)
 
   useEffect(() => {
     loadData()
@@ -34,6 +35,17 @@ export default function HomePage() {
 
     if (imagesData) {
       setImages(imagesData)
+    }
+
+    // Load location info
+    const { data: locationData } = await supabase
+      .from('location_info')
+      .select('*')
+      .eq('is_active', true)
+      .single()
+
+    if (locationData) {
+      setLocationInfo(locationData)
     }
   }
 
@@ -153,19 +165,23 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">위치 안내</h2>
           
-          <div className="bg-gray-100 rounded-xl p-8">
-            <div className="flex items-start space-x-4">
-              <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="text-xl font-bold mb-2">강원도 속초시</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  • 속초 해수욕장: 도보 10분<br />
-                  • 속초 관광수산시장: 차량 5분<br />
-                  • 설악산: 차량 15분
-                </p>
+          {locationInfo ? (
+            <div className="bg-gray-100 rounded-xl p-8">
+              <div className="flex items-start space-x-4">
+                <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-bold mb-2">{locationInfo.title}</h3>
+                  <div className="text-gray-600 leading-relaxed whitespace-pre-line">
+                    {locationInfo.content}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center text-gray-500">
+              위치 정보를 불러오는 중입니다...
+            </div>
+          )}
         </div>
       </section>
 
