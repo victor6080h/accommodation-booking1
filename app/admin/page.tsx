@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users, Bell } from 'lucide-react'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -86,6 +86,19 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">예약 캘린더</h2>
               <p className="text-gray-600 text-center">
                 예약 현황 확인 및 관리
+              </p>
+            </div>
+          </Link>
+
+          {/* 예약 알림 */}
+          <Link href="/admin/notifications">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-indigo-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4 mx-auto">
+                <Bell className="w-8 h-8 text-indigo-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">예약 알림</h2>
+              <p className="text-gray-600 text-center">
+                실시간 예약 알림 확인 및 관리
               </p>
             </div>
           </Link>

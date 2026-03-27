@@ -212,7 +212,8 @@ export default function GuestCalendar() {
       return
     }
 
-    const { error } = await supabase
+    // 1. 예약 생성
+    const { data: newBooking, error: bookingError } = await supabase
       .from('bookings')
       .insert([
         {
@@ -225,11 +226,42 @@ export default function GuestCalendar() {
           status: 'confirmed'
         }
       ])
+      .select()
 
-    if (error) {
-      console.error('Error creating booking:', error)
+    if (bookingError) {
+      console.error('Error creating booking:', bookingError)
       alert('예약에 실패했습니다.')
       return
+    }
+
+    // 2. 총 금액 계산 (날짜별 가격 반영)
+    let totalPrice = 0
+    const checkIn = new Date(selectedDates.checkIn)
+    const checkOut = new Date(selectedDates.checkOut)
+    const currentDate = new Date(checkIn)
+    
+    while (currentDate < checkOut) {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      const specialPrice = datePricing.find(dp => dp.date === dateStr)
+      totalPrice += specialPrice ? specialPrice.price : selectedRoom.price
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+
+    // 3. 알림 생성
+    if (newBooking && newBooking.length > 0) {
+      await supabase
+        .from('booking_notifications')
+        .insert([
+          {
+            booking_id: newBooking[0].id,
+            guest_name: formData.guestName,
+            room_name: selectedRoom.name,
+            check_in: formatDate(selectedDates.checkIn),
+            check_out: formatDate(selectedDates.checkOut),
+            total_price: totalPrice,
+            is_read: false
+          }
+        ])
     }
 
     alert('예약이 완료되었습니다!')

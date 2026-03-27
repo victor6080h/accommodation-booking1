@@ -92,3 +92,16 @@ export interface GuestAccount {
   created_at?: string
   updated_at?: string
 }
+
+export interface BookingNotification {
+  id: string
+  booking_id: string
+  guest_name: string
+  room_name: string
+  check_in: string
+  check_out: string
+  total_price: number
+  is_read: boolean
+  created_at?: string
+  updated_at?: string
+}
