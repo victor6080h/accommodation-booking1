@@ -1,9 +1,28 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut } from 'lucide-react'
 
 export default function AdminDashboard() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // 로그인 확인
+    const loggedIn = localStorage.getItem('admin_logged_in')
+    if (!loggedIn) {
+      router.push('/admin/login')
+    }
+  }, [router])
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_logged_in')
+    localStorage.removeItem('admin_username')
+    localStorage.removeItem('admin_id')
+    router.push('/admin/login')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -15,12 +34,21 @@ export default function AdminDashboard() {
               <span className="text-xl font-bold">속초 아파트 - 관리자</span>
             </Link>
             
-            <Link
-              href="/"
-              className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
-            >
-              홈으로
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/"
+                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+              >
+                홈으로
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>로그아웃</span>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -123,6 +151,19 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">위치 안내</h2>
               <p className="text-gray-600 text-center">
                 메인 페이지 위치 정보 수정
+              </p>
+            </div>
+          </Link>
+
+          {/* 관리자 계정 관리 */}
+          <Link href="/admin/accounts">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-red-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4 mx-auto">
+                <User className="w-8 h-8 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">계정 관리</h2>
+              <p className="text-gray-600 text-center">
+                관리자 계정 추가/수정/삭제
               </p>
             </div>
           </Link>

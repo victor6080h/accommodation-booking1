@@ -74,3 +74,12 @@ export interface LocationInfo {
   created_at?: string
   updated_at?: string
 }
+
+export interface AdminUser {
+  id: string
+  username: string
+  password: string
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}
