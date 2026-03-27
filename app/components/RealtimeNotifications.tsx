@@ -85,7 +85,7 @@ export default function RealtimeNotifications() {
   const showBrowserNotification = (notification: Notification) => {
     if (permission !== 'granted') return
 
-    const options: NotificationOptions = {
+    const options: NotificationOptions & { vibrate?: number[] } = {
       body: notification.message,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
@@ -98,7 +98,7 @@ export default function RealtimeNotifications() {
       }
     }
 
-    const n = new Notification(notification.title, options)
+    const n = new window.Notification(notification.title, options)
 
     n.onclick = () => {
       window.focus()
