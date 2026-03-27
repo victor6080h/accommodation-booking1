@@ -23,9 +23,15 @@ export default function RealtimeNotifications() {
       setPermission(Notification.permission)
     }
 
+    console.log('[알림] Supabase Realtime 구독 시작...')
+
     // Supabase Realtime 구독
     const channel = supabase
-      .channel('bookings')
+      .channel('bookings-realtime', {
+        config: {
+          broadcast: { self: true }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -34,6 +40,7 @@ export default function RealtimeNotifications() {
           table: 'bookings'
         },
         (payload) => {
+          console.log('[알림] 새 예약 감지!', payload)
           const booking = payload.new as any
           
           // 알림 생성
@@ -45,24 +52,43 @@ export default function RealtimeNotifications() {
             timestamp: Date.now()
           }
 
+          console.log('[알림] 알림 생성:', notification)
+
           // 알림 목록에 추가
           setNotifications(prev => [notification, ...prev])
 
           // 브라우저 알림 표시
-          if (permission === 'granted') {
+          const currentPermission = Notification.permission
+          console.log('[알림] 브라우저 알림 권한:', currentPermission)
+          
+          if (currentPermission === 'granted') {
             showBrowserNotification(notification)
+          } else {
+            console.warn('[알림] 브라우저 알림 권한이 없습니다. "알림 켜기"를 눌러주세요.')
           }
 
           // 소리 재생
           playNotificationSound()
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[알림] Supabase 구독 상태:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('[알림] ✅ 실시간 알림이 활성화되었습니다!')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[알림] ❌ 채널 오류 발생')
+        } else if (status === 'TIMED_OUT') {
+          console.error('[알림] ❌ 연결 시간 초과')
+        } else if (status === 'CLOSED') {
+          console.warn('[알림] ⚠️ 연결이 닫혔습니다')
+        }
+      })
 
     return () => {
+      console.log('[알림] Supabase Realtime 구독 해제')
       supabase.removeChannel(channel)
     }
-  }, [permission])
+  }, [])
 
   const requestPermission = async () => {
     if (!('Notification' in window)) {
@@ -125,6 +151,23 @@ export default function RealtimeNotifications() {
     setNotifications([])
   }
 
+  const testNotification = () => {
+    const testNotif: Notification = {
+      id: 'test-' + Date.now(),
+      title: '테스트 알림',
+      message: '알림이 정상적으로 작동합니다! 🎉',
+      timestamp: Date.now()
+    }
+    
+    setNotifications(prev => [testNotif, ...prev])
+    
+    if (permission === 'granted') {
+      showBrowserNotification(testNotif)
+    }
+    
+    playNotificationSound()
+  }
+
   return (
     <div className="relative">
       {/* 알림 버튼 */}
@@ -151,31 +194,62 @@ export default function RealtimeNotifications() {
       {showNotificationCenter && (
         <div className="absolute right-0 top-12 w-80 md:w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 max-h-[500px] flex flex-col">
           {/* 헤더 */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900">알림</h3>
-            <div className="flex items-center gap-2">
-              {permission !== 'granted' && (
-                <button
-                  onClick={requestPermission}
-                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
-                >
-                  알림 켜기
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button
-                  onClick={clearAll}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  모두 지우기
-                </button>
-              )}
+          <div className="flex flex-col p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-gray-900">알림</h3>
               <button
                 onClick={() => setShowNotificationCenter(false)}
                 className="p-1 hover:bg-gray-100 rounded"
               >
                 <X className="w-4 h-4 text-gray-500" />
               </button>
+            </div>
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              {permission !== 'granted' && (
+                <button
+                  onClick={requestPermission}
+                  className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors font-medium"
+                >
+                  🔔 알림 켜기
+                </button>
+              )}
+              {permission === 'granted' && (
+                <button
+                  onClick={testNotification}
+                  className="text-xs bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 transition-colors font-medium"
+                >
+                  ✓ 테스트
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={clearAll}
+                  className="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-300 transition-colors"
+                >
+                  모두 지우기
+                </button>
+              )}
+            </div>
+            
+            {/* 상태 표시 */}
+            <div className="mt-2 text-xs">
+              {permission === 'granted' ? (
+                <span className="text-green-600 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
+                  실시간 알림 활성화
+                </span>
+              ) : permission === 'denied' ? (
+                <span className="text-red-600 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                  알림 차단됨 (브라우저 설정에서 허용 필요)
+                </span>
+              ) : (
+                <span className="text-gray-500 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                  알림을 켜서 예약 알림 받기
+                </span>
+              )}
             </div>
           </div>
 
