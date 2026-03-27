@@ -3,7 +3,9 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users, Bell } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users } from 'lucide-react'
+import RealtimeNotifications from '../components/RealtimeNotifications'
+import PWAInstaller from '../components/PWAInstaller'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -34,19 +36,20 @@ export default function AdminDashboard() {
               <span className="text-xl font-bold">속초 아파트 - 관리자</span>
             </Link>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <RealtimeNotifications />
               <Link
                 href="/"
-                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+                className="hidden md:flex bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition items-center"
               >
                 홈으로
               </Link>
               <button
                 onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center space-x-2"
+                className="bg-red-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center space-x-1 md:space-x-2"
               >
                 <LogOut className="w-4 h-4" />
-                <span>로그아웃</span>
+                <span className="hidden md:inline">로그아웃</span>
               </button>
             </div>
           </div>
@@ -86,19 +89,6 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">예약 캘린더</h2>
               <p className="text-gray-600 text-center">
                 예약 현황 확인 및 관리
-              </p>
-            </div>
-          </Link>
-
-          {/* 예약 알림 */}
-          <Link href="/admin/notifications">
-            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-indigo-500">
-              <div className="flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4 mx-auto">
-                <Bell className="w-8 h-8 text-indigo-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-center mb-2">예약 알림</h2>
-              <p className="text-gray-600 text-center">
-                실시간 예약 알림 확인 및 관리
               </p>
             </div>
           </Link>
@@ -195,6 +185,9 @@ export default function AdminDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* PWA Installer */}
+      <PWAInstaller />
     </div>
   )
 }

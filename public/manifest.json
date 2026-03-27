@@ -1,0 +1,41 @@
+{
+  "name": "속초 아파트 관리자",
+  "short_name": "속초관리",
+  "description": "속초 아파트 예약 관리자 전용 앱",
+  "start_url": "/admin?source=pwa",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "예약 확인",
+      "short_name": "예약",
+      "description": "예약 현황 바로가기",
+      "url": "/admin/calendar",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "객실 관리",
+      "short_name": "객실",
+      "description": "객실 관리 바로가기",
+      "url": "/admin/rooms",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
