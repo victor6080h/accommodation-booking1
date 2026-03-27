@@ -1,18 +1,27 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Calendar, MapPin, Home } from 'lucide-react'
 import { supabase, Feature, ApartmentImage, LocationInfo } from '@/lib/supabase'
 
 export default function HomePage() {
+  const router = useRouter()
   const [features, setFeatures] = useState<Feature[]>([])
   const [images, setImages] = useState<ApartmentImage[]>([])
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null)
 
   useEffect(() => {
+    // 게스트 로그인 확인
+    const loggedIn = localStorage.getItem('guest_logged_in')
+    if (!loggedIn) {
+      router.push('/guest/login')
+      return
+    }
+
     loadData()
-  }, [])
+  }, [router])
 
   const loadData = async () => {
     // Load features
