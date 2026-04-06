@@ -330,7 +330,7 @@ export default function GuestCalendar() {
       <div
         key={day}
         onClick={() => handleDateClick(day)}
-        className={`min-h-[100px] sm:h-28 border border-gray-200 p-1 sm:p-2 transition flex flex-col ${
+        className={`min-h-[110px] sm:h-32 border border-gray-200 p-1 sm:p-2 transition flex flex-col justify-between ${
           isBooked || isPast
             ? 'bg-gray-200 cursor-not-allowed'
             : isInRange
@@ -344,40 +344,43 @@ export default function GuestCalendar() {
           {day}
         </div>
         
-        {isCheckIn && (
-          <div className="text-[10px] sm:text-xs font-bold text-blue-700 bg-blue-200 px-1 sm:px-2 py-0.5 sm:py-1 rounded mb-1 text-center">
-            체크인
-          </div>
-        )}
-        
-        {isCheckOut && (
-          <div className="text-[10px] sm:text-xs font-bold text-blue-700 bg-blue-200 px-1 sm:px-2 py-0.5 sm:py-1 rounded mb-1 text-center">
-            체크아웃
-          </div>
-        )}
-        
-        {!isCheckIn && !isCheckOut && (
-          <>
-            {isBooked ? (
-              <div className="text-[10px] sm:text-xs font-medium text-red-600 bg-red-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-center">
-                예약완료
-              </div>
-            ) : isPast ? (
-              <div className="text-[10px] sm:text-xs font-medium text-gray-500 px-1 sm:px-2 py-0.5 sm:py-1 text-center">
-                지난날짜
-              </div>
-            ) : (
-              <>
-                <div className="text-[10px] sm:text-xs font-medium text-green-600 bg-green-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded mb-1 text-center whitespace-nowrap">
-                  예약가능
+        <div className="flex-1 flex flex-col justify-center items-center gap-1">
+          {isCheckIn && (
+            <div className="text-[10px] sm:text-xs font-bold text-blue-700 bg-blue-200 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-center w-full">
+              체크인
+            </div>
+          )}
+          
+          {isCheckOut && (
+            <div className="text-[10px] sm:text-xs font-bold text-blue-700 bg-blue-200 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-center w-full">
+              체크아웃
+            </div>
+          )}
+          
+          {!isCheckIn && !isCheckOut && (
+            <>
+              {isBooked ? (
+                <div className="text-[10px] sm:text-xs font-medium text-red-600 bg-red-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-center w-full">
+                  예약완료
                 </div>
-                <div className="text-[10px] sm:text-xs font-bold text-gray-700 text-center break-all">
-                  {dayPrice.toLocaleString()}원
+              ) : isPast ? (
+                <div className="text-[10px] sm:text-xs font-medium text-gray-500 px-1 sm:px-2 py-0.5 sm:py-1 text-center w-full">
+                  지난날짜
                 </div>
-              </>
-            )}
-          </>
-        )}
+              ) : (
+                <>
+                  <div className="text-[10px] sm:text-xs font-medium text-green-600 bg-green-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-center w-full whitespace-nowrap">
+                    예약가능
+                  </div>
+                  <div className="text-[9px] sm:text-xs font-bold text-gray-700 text-center w-full px-0.5">
+                    <span className="inline-block">{dayPrice.toLocaleString()}</span>
+                    <span className="inline-block">원</span>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
     )
   }
