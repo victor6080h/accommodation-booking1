@@ -13,6 +13,8 @@ export default function AdminRooms() {
     name: '',
     roomNumber: '',
     price: '',
+    weekdayPrice: '',  // 주중 가격
+    weekendPrice: '',  // 주말 가격
     capacity: '',
     description: ''
   })
@@ -45,13 +47,19 @@ export default function AdminRooms() {
 
     setLoading(true)
 
+    const basePrice = parseInt(formData.price)
+    const weekdayPrice = formData.weekdayPrice ? parseInt(formData.weekdayPrice) : basePrice
+    const weekendPrice = formData.weekendPrice ? parseInt(formData.weekendPrice) : Math.floor(basePrice * 1.2)
+
     const { data, error } = await supabase
       .from('rooms')
       .insert([
         {
           name: formData.name,
           room_number: formData.roomNumber,
-          price: parseInt(formData.price),
+          price: basePrice,
+          weekday_price: weekdayPrice,
+          weekend_price: weekendPrice,
           capacity: parseInt(formData.capacity),
           description: formData.description
         }
@@ -76,6 +84,8 @@ export default function AdminRooms() {
       name: room.name,
       roomNumber: room.room_number,
       price: room.price.toString(),
+      weekdayPrice: room.weekday_price?.toString() || room.price.toString(),
+      weekendPrice: room.weekend_price?.toString() || Math.floor(room.price * 1.2).toString(),
       capacity: room.capacity.toString(),
       description: room.description || ''
     })
@@ -87,12 +97,18 @@ export default function AdminRooms() {
 
     setLoading(true)
 
+    const basePrice = parseInt(formData.price)
+    const weekdayPrice = formData.weekdayPrice ? parseInt(formData.weekdayPrice) : basePrice
+    const weekendPrice = formData.weekendPrice ? parseInt(formData.weekendPrice) : Math.floor(basePrice * 1.2)
+
     const { error } = await supabase
       .from('rooms')
       .update({
         name: formData.name,
         room_number: formData.roomNumber,
-        price: parseInt(formData.price),
+        price: basePrice,
+        weekday_price: weekdayPrice,
+        weekend_price: weekendPrice,
         capacity: parseInt(formData.capacity),
         description: formData.description
       })
@@ -138,6 +154,8 @@ export default function AdminRooms() {
       name: '',
       roomNumber: '',
       price: '',
+      weekdayPrice: '',
+      weekendPrice: '',
       capacity: '',
       description: ''
     })
@@ -211,6 +229,35 @@ export default function AdminRooms() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="예: 150000"
               />
+              <p className="text-xs text-gray-500 mt-1">기본 가격 (특별 가격 미설정 시)</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                주중 가격 (원) - 일, 월, 화, 수, 목
+              </label>
+              <input
+                type="number"
+                value={formData.weekdayPrice}
+                onChange={(e) => setFormData({ ...formData, weekdayPrice: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="미입력 시 기본 가격 적용"
+              />
+              <p className="text-xs text-gray-500 mt-1">일요일~목요일 가격</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                주말 가격 (원) - 금, 토
+              </label>
+              <input
+                type="number"
+                value={formData.weekendPrice}
+                onChange={(e) => setFormData({ ...formData, weekendPrice: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder="미입력 시 기본 가격 × 1.2"
+              />
+              <p className="text-xs text-gray-500 mt-1">금요일~토요일 가격</p>
             </div>
 
             <div>

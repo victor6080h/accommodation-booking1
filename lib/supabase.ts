@@ -11,6 +11,8 @@ export interface Room {
   name: string
   room_number: string
   price: number
+  weekday_price?: number  // 주중 가격 (일, 월, 화, 수, 목)
+  weekend_price?: number  // 주말 가격 (금, 토)
   capacity: number
   description: string
   created_at?: string

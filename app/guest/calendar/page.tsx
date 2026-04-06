@@ -145,9 +145,25 @@ export default function GuestCalendar() {
       return pricing.price
     }
     
-    // 특별 가격이 없으면 객실 기본 가격 반환
+    // 특별 가격이 없으면 주중/주말 가격 확인
     const selectedRoom = rooms.find(r => r.id === formData.roomId)
-    return selectedRoom ? selectedRoom.price : 0
+    if (!selectedRoom) return 0
+    
+    // 요일 확인 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+    const date = new Date(year, month, day)
+    const dayOfWeek = date.getDay()
+    
+    // 금요일(5), 토요일(6)은 주말 가격
+    const isWeekend = dayOfWeek === 5 || dayOfWeek === 6
+    
+    if (isWeekend && selectedRoom.weekend_price) {
+      return selectedRoom.weekend_price
+    } else if (!isWeekend && selectedRoom.weekday_price) {
+      return selectedRoom.weekday_price
+    }
+    
+    // 주중/주말 가격이 없으면 기본 가격 반환
+    return selectedRoom.price
   }
 
   const handleDateClick = (day: number) => {
@@ -314,7 +330,7 @@ export default function GuestCalendar() {
       <div
         key={day}
         onClick={() => handleDateClick(day)}
-        className={`h-28 border border-gray-200 p-2 transition ${
+        className={`min-h-[100px] sm:h-28 border border-gray-200 p-1 sm:p-2 transition flex flex-col ${
           isBooked || isPast
             ? 'bg-gray-200 cursor-not-allowed'
             : isInRange
@@ -322,20 +338,20 @@ export default function GuestCalendar() {
             : 'bg-white cursor-pointer hover:bg-gray-50'
         } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
       >
-        <div className={`text-sm font-semibold mb-1 ${
+        <div className={`text-xs sm:text-sm font-semibold mb-1 ${
           isPast ? 'text-gray-400' : isToday ? 'text-blue-600' : 'text-gray-900'
         }`}>
           {day}
         </div>
         
         {isCheckIn && (
-          <div className="text-xs font-bold text-blue-700 bg-blue-200 px-2 py-1 rounded mb-1">
+          <div className="text-[10px] sm:text-xs font-bold text-blue-700 bg-blue-200 px-1 sm:px-2 py-0.5 sm:py-1 rounded mb-1 text-center">
             체크인
           </div>
         )}
         
         {isCheckOut && (
-          <div className="text-xs font-bold text-blue-700 bg-blue-200 px-2 py-1 rounded mb-1">
+          <div className="text-[10px] sm:text-xs font-bold text-blue-700 bg-blue-200 px-1 sm:px-2 py-0.5 sm:py-1 rounded mb-1 text-center">
             체크아웃
           </div>
         )}
@@ -343,19 +359,19 @@ export default function GuestCalendar() {
         {!isCheckIn && !isCheckOut && (
           <>
             {isBooked ? (
-              <div className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
+              <div className="text-[10px] sm:text-xs font-medium text-red-600 bg-red-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-center">
                 예약완료
               </div>
             ) : isPast ? (
-              <div className="text-xs font-medium text-gray-500 px-2 py-1">
+              <div className="text-[10px] sm:text-xs font-medium text-gray-500 px-1 sm:px-2 py-0.5 sm:py-1 text-center">
                 지난날짜
               </div>
             ) : (
               <>
-                <div className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded mb-1">
+                <div className="text-[10px] sm:text-xs font-medium text-green-600 bg-green-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded mb-1 text-center whitespace-nowrap">
                   예약가능
                 </div>
-                <div className="text-xs font-bold text-gray-700">
+                <div className="text-[10px] sm:text-xs font-bold text-gray-700 text-center break-all">
                   {dayPrice.toLocaleString()}원
                 </div>
               </>

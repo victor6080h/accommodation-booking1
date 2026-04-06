@@ -151,17 +151,33 @@ export default function AdminCalendar() {
     return diffDays
   }
 
-  // 특정 날짜의 가격 가져오기 (일자별 가격 우선, 없으면 기본 가격)
+  // 특정 날짜의 가격 가져오기 (일자별 가격 우선, 없으면 주중/주말 가격, 그 다음 기본 가격)
   const getPriceForDate = (roomId: string, dateStr: string): number => {
-    // 일자별 가격 확인
+    // 1순위: 일자별 특별 가격 확인
     const pricing = datePricing.find(p => p.room_id === roomId && p.date === dateStr)
     if (pricing) {
       return pricing.price
     }
     
-    // 없으면 객실 기본 가격
+    // 2순위: 주중/주말 가격 확인
     const room = rooms.find(r => r.id === roomId)
-    return room ? room.price : 0
+    if (!room) return 0
+    
+    // 요일 확인 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+    const date = new Date(dateStr)
+    const dayOfWeek = date.getDay()
+    
+    // 금요일(5), 토요일(6)은 주말 가격
+    const isWeekend = dayOfWeek === 5 || dayOfWeek === 6
+    
+    if (isWeekend && room.weekend_price) {
+      return room.weekend_price
+    } else if (!isWeekend && room.weekday_price) {
+      return room.weekday_price
+    }
+    
+    // 3순위: 기본 가격
+    return room.price
   }
 
   // 예약 총 금액 계산 (일자별 가격 반영)
