@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Home, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
-import { supabase, Room } from '@/lib/supabase'
+import { Home, Plus, Edit2, Trash2, Save, X, Calendar, Check } from 'lucide-react'
+import { supabase, Room, DatePricing } from '@/lib/supabase'
 
 export default function AdminRooms() {
   const [rooms, setRooms] = useState<Room[]>([])
@@ -13,14 +13,29 @@ export default function AdminRooms() {
     name: '',
     roomNumber: '',
     price: '',
-    weekdayPrice: '',  // 주중 가격
-    weekendPrice: '',  // 주말 가격
+    weekdayPrice: '',
+    weekendPrice: '',
     capacity: '',
     description: ''
   })
   const [loading, setLoading] = useState(false)
+  
+  // 요일별 가격 설정 상태
+  const [showBulkPricing, setShowBulkPricing] = useState(false)
+  const [selectedDays, setSelectedDays] = useState<number[]>([]) // 0=일, 1=월, ..., 6=토
+  const [bulkPrice, setBulkPrice] = useState('')
+  const [targetMonth, setTargetMonth] = useState(new Date())
 
-  // Load rooms from Supabase
+  const weekDays = [
+    { index: 0, name: '일', shortName: '일', color: 'text-red-600' },
+    { index: 1, name: '월', shortName: '월', color: 'text-gray-700' },
+    { index: 2, name: '화', shortName: '화', color: 'text-gray-700' },
+    { index: 3, name: '수', shortName: '수', color: 'text-gray-700' },
+    { index: 4, name: '목', shortName: '목', color: 'text-gray-700' },
+    { index: 5, name: '금', shortName: '금', color: 'text-blue-600' },
+    { index: 6, name: '토', shortName: '토', color: 'text-blue-600' }
+  ]
+
   useEffect(() => {
     loadRooms()
   }, [])
@@ -90,6 +105,7 @@ export default function AdminRooms() {
       description: room.description || ''
     })
     setIsEditing(true)
+    setShowBulkPricing(false)
   }
 
   const handleUpdateRoom = async () => {
@@ -149,6 +165,100 @@ export default function AdminRooms() {
     }
   }
 
+  // 요일 선택/해제
+  const toggleDaySelection = (dayIndex: number) => {
+    if (selectedDays.includes(dayIndex)) {
+      setSelectedDays(selectedDays.filter(d => d !== dayIndex))
+    } else {
+      setSelectedDays([...selectedDays, dayIndex])
+    }
+  }
+
+  // 선택한 요일에 가격 일괄 적용
+  const applyBulkPricing = async () => {
+    if (!editingRoom) {
+      alert('먼저 객실을 선택해주세요.')
+      return
+    }
+
+    if (selectedDays.length === 0) {
+      alert('요일을 선택해주세요.')
+      return
+    }
+
+    if (!bulkPrice || parseInt(bulkPrice) <= 0) {
+      alert('가격을 입력해주세요.')
+      return
+    }
+
+    const price = parseInt(bulkPrice)
+    const year = targetMonth.getFullYear()
+    const month = targetMonth.getMonth()
+
+    // 해당 월의 모든 날짜 중에서 선택한 요일에 해당하는 날짜 찾기
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const targetDates: string[] = []
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day)
+      const dayOfWeek = date.getDay()
+      
+      if (selectedDays.includes(dayOfWeek)) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+        targetDates.push(dateStr)
+      }
+    }
+
+    if (targetDates.length === 0) {
+      alert('해당 월에 선택한 요일이 없습니다.')
+      return
+    }
+
+    const dayNames = selectedDays.map(i => weekDays[i].name).join(', ')
+    if (!confirm(`${year}년 ${month + 1}월의 모든 ${dayNames}요일 (${targetDates.length}일)에\n${price.toLocaleString()}원을 적용하시겠습니까?`)) {
+      return
+    }
+
+    setLoading(true)
+
+    // 각 날짜에 가격 적용
+    for (const dateStr of targetDates) {
+      // 기존 가격 확인
+      const { data: existing } = await supabase
+        .from('date_pricing')
+        .select('*')
+        .eq('room_id', editingRoom.id)
+        .eq('date', dateStr)
+        .eq('is_active', true)
+        .single()
+
+      if (existing) {
+        // 업데이트
+        await supabase
+          .from('date_pricing')
+          .update({ price, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+      } else {
+        // 새로 추가
+        await supabase
+          .from('date_pricing')
+          .insert([{
+            room_id: editingRoom.id,
+            date: dateStr,
+            price,
+            is_active: true
+          }])
+      }
+    }
+
+    setLoading(false)
+    alert(`${targetDates.length}일에 가격이 적용되었습니다!`)
+    
+    // 초기화
+    setSelectedDays([])
+    setBulkPrice('')
+  }
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -161,6 +271,9 @@ export default function AdminRooms() {
     })
     setIsEditing(false)
     setEditingRoom(null)
+    setShowBulkPricing(false)
+    setSelectedDays([])
+    setBulkPrice('')
   }
 
   return (
@@ -289,14 +402,24 @@ export default function AdminRooms() {
 
           <div className="flex justify-end space-x-4 mt-6">
             {isEditing && (
-              <button
-                onClick={resetForm}
-                className="flex items-center space-x-2 px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-                disabled={loading}
-              >
-                <X className="w-5 h-5" />
-                <span>취소</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowBulkPricing(!showBulkPricing)}
+                  className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                  disabled={loading}
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span>요일별 가격 설정</span>
+                </button>
+                <button
+                  onClick={resetForm}
+                  className="flex items-center space-x-2 px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                  disabled={loading}
+                >
+                  <X className="w-5 h-5" />
+                  <span>취소</span>
+                </button>
+              </>
             )}
             <button
               onClick={isEditing ? handleUpdateRoom : handleAddRoom}
@@ -308,6 +431,107 @@ export default function AdminRooms() {
             </button>
           </div>
         </div>
+
+        {/* 요일별 가격 설정 */}
+        {isEditing && showBulkPricing && editingRoom && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-2 border-purple-200">
+            <h3 className="text-xl font-bold mb-4 flex items-center">
+              <Calendar className="w-6 h-6 mr-2 text-purple-600" />
+              요일별 일괄 가격 설정 - {editingRoom.name}
+            </h3>
+            
+            <div className="space-y-4">
+              {/* 월 선택 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  적용할 월 선택
+                </label>
+                <input
+                  type="month"
+                  value={`${targetMonth.getFullYear()}-${String(targetMonth.getMonth() + 1).padStart(2, '0')}`}
+                  onChange={(e) => {
+                    const [year, month] = e.target.value.split('-')
+                    setTargetMonth(new Date(parseInt(year), parseInt(month) - 1, 1))
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* 요일 선택 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  적용할 요일 선택 {selectedDays.length > 0 && `(${selectedDays.length}개 선택)`}
+                </label>
+                <div className="grid grid-cols-7 gap-2">
+                  {weekDays.map((day) => (
+                    <button
+                      key={day.index}
+                      onClick={() => toggleDaySelection(day.index)}
+                      className={`p-4 border-2 rounded-lg transition ${
+                        selectedDays.includes(day.index)
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <div className={`text-center font-bold ${day.color}`}>
+                        {day.name}
+                      </div>
+                      {selectedDays.includes(day.index) && (
+                        <Check className="w-5 h-5 mx-auto mt-2 text-purple-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 여러 요일을 선택하고 한번에 가격을 적용할 수 있습니다
+                </p>
+              </div>
+
+              {/* 가격 입력 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  적용할 가격 (원)
+                </label>
+                <input
+                  type="number"
+                  value={bulkPrice}
+                  onChange={(e) => setBulkPrice(e.target.value)}
+                  placeholder="예: 200000"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* 적용 버튼 */}
+              <button
+                onClick={applyBulkPricing}
+                disabled={loading || selectedDays.length === 0 || !bulkPrice}
+                className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:bg-gray-400 flex items-center justify-center space-x-2"
+              >
+                <Save className="w-5 h-5" />
+                <span>
+                  {loading 
+                    ? '처리중...' 
+                    : `${targetMonth.getFullYear()}년 ${targetMonth.getMonth() + 1}월의 선택한 요일에 가격 적용`
+                  }
+                </span>
+              </button>
+
+              {/* 사용 안내 */}
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="font-bold text-purple-900 mb-2">💡 사용 방법</h4>
+                <ul className="text-sm text-purple-800 space-y-1">
+                  <li>1. 적용할 월을 선택합니다</li>
+                  <li>2. 적용할 요일을 클릭하여 선택합니다 (여러 개 선택 가능)</li>
+                  <li>3. 적용할 가격을 입력합니다</li>
+                  <li>4. "가격 적용" 버튼을 클릭하면 선택한 요일에 한번에 가격이 적용됩니다</li>
+                  <li className="text-purple-600 font-semibold">
+                    예: 5월의 모든 금요일과 토요일을 선택하고 200,000원 입력 → 5월 금토요일 전체에 200,000원 적용!
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Rooms List */}
         <div className="bg-white rounded-xl shadow-lg p-6">
@@ -348,6 +572,16 @@ export default function AdminRooms() {
                     <p className="text-2xl font-bold text-blue-600">
                       {room.price.toLocaleString()}원<span className="text-sm text-gray-600">/박</span>
                     </p>
+                    {room.weekday_price && (
+                      <p className="text-sm text-green-600">
+                        주중: {room.weekday_price.toLocaleString()}원
+                      </p>
+                    )}
+                    {room.weekend_price && (
+                      <p className="text-sm text-orange-600">
+                        주말: {room.weekend_price.toLocaleString()}원
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600">
                       최대 인원: {room.capacity}명
                     </p>
