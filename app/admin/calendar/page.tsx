@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, XCircle, DollarSign, TrendingUp } from 'lucide-react'
 import { supabase, Room, Booking, DatePricing } from '@/lib/supabase'
+import { isHoliday, HOLIDAY_COLOR } from '@/lib/holidays'
 
 export default function AdminCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -231,6 +232,8 @@ export default function AdminCalendar() {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const holiday = isHoliday(dateStr)
     const isBooked = isDateBooked(day)
     const booking = getBookingForDate(day)
     const isToday = new Date().getDate() === day && 
@@ -244,8 +247,17 @@ export default function AdminCalendar() {
           isBooked ? 'bg-red-50' : 'bg-white'
         } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
       >
-        <div className={`text-sm font-semibold ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
-          {day}
+        <div className="flex justify-between items-start">
+          <div className={`text-sm font-semibold ${
+            isToday ? 'text-blue-600' : holiday ? HOLIDAY_COLOR : 'text-gray-900'
+          }`}>
+            {day}
+          </div>
+          {holiday && (
+            <div className={`text-[8px] font-bold ${HOLIDAY_COLOR} px-1 py-0.5 rounded whitespace-nowrap`}>
+              {holiday.name}
+            </div>
+          )}
         </div>
         {isBooked && booking && (
           <div className="mt-1">

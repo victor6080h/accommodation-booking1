@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Save, X, Check, Tag } from 'lucide-react'
 import { supabase, Room, DatePricing, PricePreset } from '@/lib/supabase'
+import { isHoliday, HOLIDAY_COLOR, HOLIDAY_BG_COLOR } from '@/lib/holidays'
 
 export default function AdminPricing() {
   const [rooms, setRooms] = useState<Room[]>([])
@@ -526,6 +527,7 @@ export default function AdminPricing() {
                 {Array.from({ length: daysInMonth }).map((_, index) => {
                   const day = index + 1
                   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                  const holiday = isHoliday(dateStr)
                   const customPrice = getPriceForDate(dateStr)
                   const isEditing = editingDate === dateStr
                   const isSelected = selectedDates.includes(dateStr)
@@ -539,6 +541,8 @@ export default function AdminPricing() {
                       className={`aspect-square border-2 rounded-lg p-2 transition cursor-pointer ${
                         isSelected 
                           ? 'border-blue-500 bg-blue-100' 
+                          : holiday
+                            ? `${HOLIDAY_BG_COLOR} border-red-200`
                           : isWeekend 
                             ? 'bg-blue-50 border-gray-200' 
                             : 'bg-white border-gray-200'
@@ -546,13 +550,20 @@ export default function AdminPricing() {
                     >
                       <div className="flex justify-between items-start">
                         <div className={`text-sm font-semibold ${
-                          dayOfWeek === 0 ? 'text-red-600' : dayOfWeek === 6 ? 'text-blue-600' : 'text-gray-700'
+                          holiday ? HOLIDAY_COLOR : dayOfWeek === 0 ? 'text-red-600' : dayOfWeek === 6 ? 'text-blue-600' : 'text-gray-700'
                         }`}>
                           {day}
                         </div>
-                        {isSelected && (
-                          <Check className="w-4 h-4 text-blue-600" />
-                        )}
+                        <div className="flex flex-col items-end gap-1">
+                          {holiday && (
+                            <div className={`text-[8px] font-bold ${HOLIDAY_COLOR} px-1 py-0.5 rounded whitespace-nowrap`}>
+                              {holiday.name}
+                            </div>
+                          )}
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-blue-600" />
+                          )}
+                        </div>
                       </div>
 
                       {isEditing ? (

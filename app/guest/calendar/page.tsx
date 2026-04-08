@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react'
 import { supabase, Room, Booking, DatePricing } from '@/lib/supabase'
+import { isHoliday, getHolidaysInMonth, HOLIDAY_COLOR, HOLIDAY_BG_COLOR } from '@/lib/holidays'
 
 export default function GuestCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -316,6 +317,8 @@ export default function GuestCalendar() {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const holiday = isHoliday(dateStr)
     const isBooked = isDateBooked(day)
     const isPast = isPastDate(day)
     const isInRange = isDateInRange(day)
@@ -335,13 +338,22 @@ export default function GuestCalendar() {
             ? 'bg-gray-200 cursor-not-allowed'
             : isInRange
             ? 'bg-blue-100 cursor-pointer hover:bg-blue-200'
+            : holiday
+            ? `${HOLIDAY_BG_COLOR} cursor-pointer hover:bg-red-100`
             : 'bg-white cursor-pointer hover:bg-gray-50'
         } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
       >
-        <div className={`text-xs sm:text-sm font-semibold mb-1 ${
-          isPast ? 'text-gray-400' : isToday ? 'text-blue-600' : 'text-gray-900'
-        }`}>
-          {day}
+        <div className="flex justify-between items-start">
+          <div className={`text-xs sm:text-sm font-semibold mb-1 ${
+            isPast ? 'text-gray-400' : isToday ? 'text-blue-600' : holiday ? HOLIDAY_COLOR : 'text-gray-900'
+          }`}>
+            {day}
+          </div>
+          {holiday && (
+            <div className={`text-[8px] sm:text-[10px] font-bold ${HOLIDAY_COLOR} px-1 py-0.5 rounded whitespace-nowrap`}>
+              {holiday.name}
+            </div>
+          )}
         </div>
         
         <div className="flex-1 flex flex-col justify-center items-center gap-1">
