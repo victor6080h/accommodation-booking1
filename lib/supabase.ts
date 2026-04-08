@@ -107,3 +107,14 @@ export interface BookingNotification {
   created_at?: string
   updated_at?: string
 }
+
+export interface PricePreset {
+  id: string
+  name: string
+  price: number
+  color: string
+  display_order: number
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}
