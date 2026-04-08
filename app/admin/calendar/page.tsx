@@ -3,28 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, XCircle, DollarSign, TrendingUp } from 'lucide-react'
-import { supabase, Room as SupabaseRoom, Booking as SupabaseBooking, DatePricing } from '@/lib/supabase'
-
-interface Room {
-  id: string
-  name: string
-  roomNumber: string
-  price: number
-  capacity: number
-  description: string
-}
-
-interface Booking {
-  id: string
-  roomId: string
-  roomName: string
-  guestName: string
-  guestPhone: string
-  checkIn: string
-  checkOut: string
-  status: 'confirmed' | 'completed' | 'cancelled'
-  totalPrice?: number
-}
+import { supabase, Room, Booking, DatePricing } from '@/lib/supabase'
 
 export default function AdminCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -48,17 +27,7 @@ export default function AdminCalendar() {
       .order('check_in', { ascending: true })
 
     if (bookingsData) {
-      const formattedBookings = bookingsData.map(b => ({
-        id: b.id,
-        roomId: b.room_id,
-        roomName: b.room_name,
-        guestName: b.guest_name,
-        guestPhone: b.guest_phone,
-        checkIn: b.check_in,
-        checkOut: b.check_out,
-        status: b.status as 'confirmed' | 'completed' | 'cancelled'
-      }))
-      setBookings(formattedBookings)
+      setBookings(bookingsData as Booking[])
     }
 
     // Load rooms from Supabase
@@ -68,15 +37,7 @@ export default function AdminCalendar() {
       .order('created_at', { ascending: true })
 
     if (roomsData) {
-      const formattedRooms = roomsData.map(r => ({
-        id: r.id,
-        name: r.name,
-        roomNumber: r.room_number,
-        price: r.price,
-        capacity: r.capacity,
-        description: r.description || ''
-      }))
-      setRooms(formattedRooms)
+      setRooms(roomsData as Room[])
     }
   }
 
@@ -143,24 +104,24 @@ export default function AdminCalendar() {
   }
 
   // 숙박일수 계산
-  const calculateNights = (checkIn: string, checkOut: string): number => {
-    const start = new Date(checkIn)
-    const end = new Date(checkOut)
+  const calculateNights = (check_in: string, check_out: string): number => {
+    const start = new Date(check_in)
+    const end = new Date(check_out)
     const diffTime = Math.abs(end.getTime() - start.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
   }
 
   // 특정 날짜의 가격 가져오기 (일자별 가격 우선, 없으면 주중/주말 가격, 그 다음 기본 가격)
-  const getPriceForDate = (roomId: string, dateStr: string): number => {
+  const getPriceForDate = (room_id: string, dateStr: string): number => {
     // 1순위: 일자별 특별 가격 확인
-    const pricing = datePricing.find(p => p.room_id === roomId && p.date === dateStr)
+    const pricing = datePricing.find(p => p.room_id === room_id && p.date === dateStr)
     if (pricing) {
       return pricing.price
     }
     
     // 2순위: 주중/주말 가격 확인
-    const room = rooms.find(r => r.id === roomId)
+    const room = rooms.find(r => r.id === room_id)
     if (!room) return 0
     
     // 요일 확인 (0: 일요일, 1: 월요일, ..., 6: 토요일)
@@ -182,16 +143,16 @@ export default function AdminCalendar() {
 
   // 예약 총 금액 계산 (일자별 가격 반영)
   const calculateBookingPrice = (booking: Booking): number => {
-    const checkIn = new Date(booking.checkIn)
-    const checkOut = new Date(booking.checkOut)
+    const check_in = new Date(booking.check_in)
+    const check_out = new Date(booking.check_out)
     
     let totalPrice = 0
-    const currentDate = new Date(checkIn)
+    const currentDate = new Date(check_in)
     
     // 체크인부터 체크아웃 전날까지 각 날짜의 가격을 합산
-    while (currentDate < checkOut) {
+    while (currentDate < check_out) {
       const dateStr = currentDate.toISOString().split('T')[0]
-      const dayPrice = getPriceForDate(booking.roomId, dateStr)
+      const dayPrice = getPriceForDate(booking.room_id, dateStr)
       totalPrice += dayPrice
       
       currentDate.setDate(currentDate.getDate() + 1)
@@ -212,7 +173,7 @@ export default function AdminCalendar() {
     return bookings
       .filter(booking => {
         if (booking.status !== 'confirmed') return false
-        const checkIn = new Date(booking.checkIn)
+        const checkIn = new Date(booking.check_in)
         checkIn.setHours(0, 0, 0, 0)
         return checkIn >= monthStart && checkIn <= monthEnd
       })
@@ -232,7 +193,7 @@ export default function AdminCalendar() {
 
     return bookings.filter(booking => {
       if (booking.status !== 'confirmed') return false
-      const checkIn = new Date(booking.checkIn)
+      const checkIn = new Date(booking.check_in)
       checkIn.setHours(0, 0, 0, 0)
       return checkIn >= monthStart && checkIn <= monthEnd
     }).length
@@ -241,8 +202,8 @@ export default function AdminCalendar() {
   const isDateBooked = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return bookings.some(booking => {
-      const checkIn = new Date(booking.checkIn)
-      const checkOut = new Date(booking.checkOut)
+      const checkIn = new Date(booking.check_in)
+      const checkOut = new Date(booking.check_out)
       const currentDate = new Date(dateStr)
       return currentDate >= checkIn && currentDate <= checkOut && booking.status === 'confirmed'
     })
@@ -251,8 +212,8 @@ export default function AdminCalendar() {
   const getBookingForDate = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return bookings.find(booking => {
-      const checkIn = new Date(booking.checkIn)
-      const checkOut = new Date(booking.checkOut)
+      const checkIn = new Date(booking.check_in)
+      const checkOut = new Date(booking.check_out)
       const currentDate = new Date(dateStr)
       return currentDate >= checkIn && currentDate <= checkOut && booking.status === 'confirmed'
     })
@@ -292,7 +253,7 @@ export default function AdminCalendar() {
               예약완료
             </div>
             <div className="text-xs text-gray-600 mt-1 truncate">
-              {booking.guestName}
+              {booking.guest_name}
             </div>
           </div>
         )}
@@ -421,7 +382,7 @@ export default function AdminCalendar() {
             
             const monthlyConfirmedBookings = bookings.filter(b => {
               if (b.status !== 'confirmed') return false
-              const checkIn = new Date(b.checkIn)
+              const checkIn = new Date(b.check_in)
               checkIn.setHours(0, 0, 0, 0)
               return checkIn >= monthStart && checkIn <= monthEnd
             })
@@ -433,9 +394,9 @@ export default function AdminCalendar() {
             ) : (
               <div className="space-y-4">
                 {monthlyConfirmedBookings
-                  .sort((a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime())
+                  .sort((a, b) => new Date(a.check_in).getTime() - new Date(b.check_in).getTime())
                   .map((booking) => {
-                    const nights = calculateNights(booking.checkIn, booking.checkOut)
+                    const nights = calculateNights(booking.check_in, booking.check_out)
                     const totalPrice = calculateBookingPrice(booking)
                     
                     return (
@@ -443,17 +404,17 @@ export default function AdminCalendar() {
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
-                              <h4 className="text-xl font-bold text-gray-900">{booking.roomName}</h4>
+                              <h4 className="text-xl font-bold text-gray-900">{booking.room_name}</h4>
                               <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                                 예약확정
                               </span>
                             </div>
                             <div className="space-y-1 text-sm text-gray-600">
                               <p>
-                                <span className="font-semibold">예약자:</span> {booking.guestName} ({booking.guestPhone})
+                                <span className="font-semibold">예약자:</span> {booking.guest_name} ({booking.guest_phone})
                               </p>
                               <p>
-                                <span className="font-semibold">체크인:</span> {booking.checkIn} → <span className="font-semibold">체크아웃:</span> {booking.checkOut}
+                                <span className="font-semibold">체크인:</span> {booking.check_in} → <span className="font-semibold">체크아웃:</span> {booking.check_out}
                               </p>
                               <p>
                                 <span className="font-semibold">숙박일수:</span> {nights}박
@@ -491,7 +452,7 @@ export default function AdminCalendar() {
           
           const monthlyCancelledBookings = bookings.filter(b => {
             if (b.status !== 'cancelled') return false
-            const checkIn = new Date(b.checkIn)
+            const checkIn = new Date(b.check_in)
             checkIn.setHours(0, 0, 0, 0)
             return checkIn >= monthStart && checkIn <= monthEnd
           })
@@ -501,9 +462,9 @@ export default function AdminCalendar() {
               <h3 className="text-2xl font-bold mb-6 text-gray-600">{year}년 {monthNames[month]} 취소된 예약</h3>
               <div className="space-y-4">
                 {monthlyCancelledBookings
-                  .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime())
+                  .sort((a, b) => new Date(b.check_in).getTime() - new Date(a.check_in).getTime())
                   .map((booking) => {
-                    const nights = calculateNights(booking.checkIn, booking.checkOut)
+                    const nights = calculateNights(booking.check_in, booking.check_out)
                     const totalPrice = calculateBookingPrice(booking)
                     
                     return (
@@ -511,13 +472,13 @@ export default function AdminCalendar() {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
-                              <h4 className="text-lg font-bold text-gray-700">{booking.roomName}</h4>
+                              <h4 className="text-lg font-bold text-gray-700">{booking.room_name}</h4>
                               <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
                                 예약취소
                               </span>
                             </div>
                             <p className="text-sm text-gray-600">
-                              예약자: {booking.guestName} | 체크인: {booking.checkIn} → 체크아웃: {booking.checkOut} | {nights}박
+                              예약자: {booking.guest_name} | 체크인: {booking.check_in} → 체크아웃: {booking.check_out} | {nights}박
                             </p>
                           </div>
                           <div className="text-right">
