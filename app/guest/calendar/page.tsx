@@ -433,15 +433,15 @@ export default function GuestCalendar() {
           <div className="space-y-2 text-gray-700">
             <p className="flex items-center">
               <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 text-sm">1</span>
-              캘린더에서 <strong className="mx-1">체크인 날짜</strong>를 클릭하세요
+              <span>캘린더에서 <strong>체크인 날짜</strong>를 클릭하세요</span>
             </p>
             <p className="flex items-center">
               <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 text-sm">2</span>
-              <strong className="mx-1">체크아웃 날짜</strong>를 클릭하세요
+              <span><strong>체크아웃 날짜</strong>를 클릭하세요</span>
             </p>
             <p className="flex items-center">
               <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 text-sm">3</span>
-              예약자 정보를 입력하고 <strong className="mx-1">예약을 완료</strong>하세요
+              <span>예약자 정보를 입력하고 <strong>예약을 완료</strong>하세요</span>
             </p>
           </div>
         </div>
