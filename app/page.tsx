@@ -144,15 +144,120 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Room Amenities */}
+      {amenities.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center mb-12">시설 정보</h2>
+            
+            {/* Structure */}
+            {amenities.filter(a => a.category === 'structure').length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">구조</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {amenities.filter(a => a.category === 'structure').map((amenity) => (
+                    <div key={amenity.id} className="flex items-center space-x-3 bg-white p-4 rounded-lg shadow">
+                      <span className="text-3xl">{amenity.icon}</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{amenity.name}</p>
+                        {amenity.description && (
+                          <p className="text-sm text-gray-600">{amenity.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Building */}
+            {amenities.filter(a => a.category === 'building').length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">건물 유형 및 면적</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {amenities.filter(a => a.category === 'building').map((amenity) => (
+                    <div key={amenity.id} className="flex items-center space-x-3 bg-white p-4 rounded-lg shadow">
+                      <span className="text-3xl">{amenity.icon}</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{amenity.name}</p>
+                        {amenity.description && (
+                          <p className="text-sm text-gray-600">{amenity.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Facility */}
+            {amenities.filter(a => a.category === 'facility').length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">엘리베이터 및 주차</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {amenities.filter(a => a.category === 'facility').map((amenity) => (
+                    <div key={amenity.id} className="flex items-center space-x-3 bg-white p-4 rounded-lg shadow">
+                      <span className="text-3xl">{amenity.icon}</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{amenity.name}</p>
+                        {amenity.description && (
+                          <p className="text-sm text-gray-600">{amenity.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Basic */}
+            {amenities.filter(a => a.category === 'basic').length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">기본 옵션</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {amenities.filter(a => a.category === 'basic').map((amenity) => (
+                    <div key={amenity.id} className="flex flex-col items-center space-y-2 bg-white p-4 rounded-lg shadow">
+                      <span className="text-3xl">{amenity.icon}</span>
+                      <p className="font-medium text-gray-900 text-center text-sm">{amenity.name}</p>
+                      {amenity.description && (
+                        <p className="text-xs text-gray-600 text-center">{amenity.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Additional */}
+            {amenities.filter(a => a.category === 'additional').length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">추가 옵션</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {amenities.filter(a => a.category === 'additional').map((amenity) => (
+                    <div key={amenity.id} className="flex flex-col items-center space-y-2 bg-white p-4 rounded-lg shadow">
+                      <span className="text-3xl">{amenity.icon}</span>
+                      <p className="font-medium text-gray-900 text-center text-sm">{amenity.name}</p>
+                      {amenity.description && (
+                        <p className="text-xs text-gray-600 text-center">{amenity.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Images Gallery */}
       {images.length > 0 && (
-        <section className="py-16 bg-gray-50">
+        <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center mb-12">아파트 갤러리</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {images.map((image) => (
-                <div key={image.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                <div key={image.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition border border-gray-200">
                   <div className="relative h-64">
                     <img
                       src={image.image_url}
@@ -181,113 +286,8 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Room Amenities */}
-      {amenities.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-center mb-12">시설 정보</h2>
-            
-            {/* Structure */}
-            {amenities.filter(a => a.category === 'structure').length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">구조</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {amenities.filter(a => a.category === 'structure').map((amenity) => (
-                    <div key={amenity.id} className="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg">
-                      <span className="text-3xl">{amenity.icon}</span>
-                      <div>
-                        <p className="font-medium text-gray-900">{amenity.name}</p>
-                        {amenity.description && (
-                          <p className="text-sm text-gray-600">{amenity.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Building */}
-            {amenities.filter(a => a.category === 'building').length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">건물 유형 및 면적</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {amenities.filter(a => a.category === 'building').map((amenity) => (
-                    <div key={amenity.id} className="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg">
-                      <span className="text-3xl">{amenity.icon}</span>
-                      <div>
-                        <p className="font-medium text-gray-900">{amenity.name}</p>
-                        {amenity.description && (
-                          <p className="text-sm text-gray-600">{amenity.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Facility */}
-            {amenities.filter(a => a.category === 'facility').length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">엘리베이터 및 주차</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {amenities.filter(a => a.category === 'facility').map((amenity) => (
-                    <div key={amenity.id} className="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg">
-                      <span className="text-3xl">{amenity.icon}</span>
-                      <div>
-                        <p className="font-medium text-gray-900">{amenity.name}</p>
-                        {amenity.description && (
-                          <p className="text-sm text-gray-600">{amenity.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Basic */}
-            {amenities.filter(a => a.category === 'basic').length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">기본 옵션</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {amenities.filter(a => a.category === 'basic').map((amenity) => (
-                    <div key={amenity.id} className="flex flex-col items-center space-y-2 bg-gray-50 p-4 rounded-lg">
-                      <span className="text-3xl">{amenity.icon}</span>
-                      <p className="font-medium text-gray-900 text-center text-sm">{amenity.name}</p>
-                      {amenity.description && (
-                        <p className="text-xs text-gray-600 text-center">{amenity.description}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Additional */}
-            {amenities.filter(a => a.category === 'additional').length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">추가 옵션</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {amenities.filter(a => a.category === 'additional').map((amenity) => (
-                    <div key={amenity.id} className="flex flex-col items-center space-y-2 bg-gray-50 p-4 rounded-lg">
-                      <span className="text-3xl">{amenity.icon}</span>
-                      <p className="font-medium text-gray-900 text-center text-sm">{amenity.name}</p>
-                      {amenity.description && (
-                        <p className="text-xs text-gray-600 text-center">{amenity.description}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
       {/* Location */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12">위치 안내</h2>
           
