@@ -169,6 +169,30 @@ export default function AdminPayment() {
           </div>
         )}
 
+        {/* No Payment Info Yet */}
+        {!isEditing && !paymentInfo && (
+          <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 className="text-2xl font-bold mb-6 flex items-center">
+              <CreditCard className="w-7 h-7 mr-2 text-blue-600" />
+              입금 계좌 등록
+            </h2>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <p className="text-yellow-800">
+                ⚠️ 등록된 입금 계좌 정보가 없습니다. 아래 버튼을 눌러 입금 계좌를 등록해주세요.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              <CreditCard className="w-5 h-5" />
+              <span>입금 계좌 등록하기</span>
+            </button>
+          </div>
+        )}
+
         {/* Edit Form */}
         {isEditing && (
           <div className="bg-white rounded-xl shadow-lg p-8">
