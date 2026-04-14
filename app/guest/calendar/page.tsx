@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react'
-import { supabase, Room, Booking, DatePricing } from '@/lib/supabase'
+import { supabase, Room, Booking, DatePricing, PaymentInfo } from '@/lib/supabase'
 import { isHoliday, getHolidaysInMonth, HOLIDAY_COLOR, HOLIDAY_BG_COLOR } from '@/lib/holidays'
 
 export default function GuestCalendar() {
@@ -16,6 +16,8 @@ export default function GuestCalendar() {
     checkOut: null
   })
   const [showBookingForm, setShowBookingForm] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [formData, setFormData] = useState({
     guestName: '',
     guestPhone: '',
@@ -24,6 +26,7 @@ export default function GuestCalendar() {
 
   useEffect(() => {
     loadData()
+    loadPaymentInfo()
   }, [])
 
   useEffect(() => {
@@ -52,6 +55,18 @@ export default function GuestCalendar() {
       if (roomsData.length > 0) {
         setFormData(prev => ({ ...prev, roomId: roomsData[0].id }))
       }
+    }
+  }
+
+  const loadPaymentInfo = async () => {
+    const { data } = await supabase
+      .from('payment_info')
+      .select('*')
+      .eq('is_active', true)
+      .single()
+
+    if (data) {
+      setPaymentInfo(data as PaymentInfo)
     }
   }
 
@@ -283,6 +298,7 @@ export default function GuestCalendar() {
 
     alert('예약이 완료되었습니다!')
     setShowBookingForm(false)
+    setShowSuccessModal(true)
     setSelectedDates({ checkIn: null, checkOut: null })
     setFormData({ guestName: '', guestPhone: '', roomId: rooms[0]?.id || '' })
     loadData() // Reload data
@@ -609,6 +625,108 @@ export default function GuestCalendar() {
             <p className="text-yellow-800 text-lg">
               ⚠️ 현재 등록된 객실이 없습니다. 관리자에게 문의해주세요.
             </p>
+          </div>
+        )}
+
+        {/* Success Modal with Payment Info */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-t-xl">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-3xl font-bold mb-2">✅ 예약 완료</h2>
+                    <p className="text-green-100">예약이 성공적으로 완료되었습니다!</p>
+                  </div>
+                  <button
+                    onClick={() => setShowSuccessModal(false)}
+                    className="text-white hover:bg-white/20 rounded-lg p-2 transition"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-6">
+                {/* Payment Info */}
+                {paymentInfo ? (
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                    <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center">
+                      <span className="text-2xl mr-2">💳</span>
+                      입금 계좌 안내
+                    </h3>
+                    
+                    <div className="space-y-3 bg-white rounded-lg p-4">
+                      <div className="flex items-center justify-between py-2 border-b border-gray-200">
+                        <span className="text-gray-600 font-medium">은행명</span>
+                        <span className="text-xl font-bold text-gray-900">{paymentInfo.bank_name}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b border-gray-200">
+                        <span className="text-gray-600 font-medium">계좌번호</span>
+                        <span className="text-xl font-bold text-gray-900 font-mono">{paymentInfo.account_number}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-gray-600 font-medium">예금주</span>
+                        <span className="text-xl font-bold text-gray-900">{paymentInfo.account_holder}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 bg-blue-100 rounded-lg p-4">
+                      <p className="text-sm text-blue-900 font-medium">
+                        📌 입금 후 예약자 성함으로 입금해주시거나, 입금 확인 요청 시 예약자 성함을 알려주세요.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
+                    <p className="text-yellow-800 font-medium">
+                      입금 계좌 정보가 등록되지 않았습니다. 관리자에게 문의해주세요.
+                    </p>
+                  </div>
+                )}
+
+                {/* Next Steps */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">📋 다음 단계</h3>
+                  <ol className="space-y-2 text-gray-700">
+                    <li className="flex items-start">
+                      <span className="font-bold text-blue-600 mr-2">1.</span>
+                      <span>위 계좌로 예약금을 입금해주세요</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-bold text-blue-600 mr-2">2.</span>
+                      <span>입금자명을 예약자 성함으로 해주시거나, 다른 이름으로 입금 시 관리자에게 알려주세요</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-bold text-blue-600 mr-2">3.</span>
+                      <span>입금 확인 후 예약이 최종 확정됩니다</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-bold text-blue-600 mr-2">4.</span>
+                      <span>체크인 1일 전 상세 안내를 보내드립니다</span>
+                    </li>
+                  </ol>
+                </div>
+
+                {/* Notice */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800">
+                    <strong>⚠️ 유의사항:</strong> 예약금 입금은 예약일로부터 24시간 이내에 완료해주세요. 
+                    기한 내 미입금 시 예약이 자동으로 취소될 수 있습니다.
+                  </p>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

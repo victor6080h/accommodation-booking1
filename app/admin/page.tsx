@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users, Sofa } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users, Sofa, CreditCard } from 'lucide-react'
 import RealtimeNotifications from '../components/RealtimeNotifications'
 import PWAInstaller from '../components/PWAInstaller'
 
@@ -193,6 +193,19 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">게스트 계정</h2>
               <p className="text-gray-600 text-center">
                 게스트 로그인 계정 관리
+              </p>
+            </div>
+          </Link>
+
+          {/* 입금 계좌 관리 */}
+          <Link href="/admin/payment">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-emerald-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4 mx-auto">
+                <CreditCard className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">입금 계좌</h2>
+              <p className="text-gray-600 text-center">
+                입금 계좌 정보 관리
               </p>
             </div>
           </Link>
