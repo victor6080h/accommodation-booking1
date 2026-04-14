@@ -20,7 +20,7 @@ export default function AdminGuide() {
       .from('guide_content')
       .select('*')
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error loading guide:', error)
@@ -31,21 +31,49 @@ export default function AdminGuide() {
   }
 
   const handleSave = async () => {
+    if (!guideContent.trim()) {
+      alert('내용을 입력해주세요.')
+      return
+    }
+
     setLoading(true)
 
-    const { error } = await supabase
-      .from('guide_content')
-      .update({ content: guideContent, updated_at: new Date().toISOString() })
-      .eq('id', guideId)
+    if (guideId) {
+      // 기존 데이터 업데이트
+      const { error } = await supabase
+        .from('guide_content')
+        .update({ content: guideContent, updated_at: new Date().toISOString() })
+        .eq('id', guideId)
 
-    setLoading(false)
+      setLoading(false)
 
-    if (error) {
-      console.error('Error saving guide:', error)
-      alert('저장에 실패했습니다.')
+      if (error) {
+        console.error('Error updating guide:', error)
+        alert('저장에 실패했습니다.')
+      } else {
+        alert('이용안내가 수정되었습니다!')
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
     } else {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      // 새로운 데이터 삽입
+      const { data, error } = await supabase
+        .from('guide_content')
+        .insert([{ content: guideContent }])
+        .select()
+        .single()
+
+      setLoading(false)
+
+      if (error) {
+        console.error('Error inserting guide:', error)
+        alert('저장에 실패했습니다.')
+      } else {
+        alert('이용안내가 등록되었습니다!')
+        setGuideId(data.id)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
     }
   }
 
