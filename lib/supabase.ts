@@ -118,3 +118,15 @@ export interface PricePreset {
   created_at?: string
   updated_at?: string
 }
+
+export interface RoomAmenity {
+  id: string
+  category: 'structure' | 'building' | 'facility' | 'basic' | 'additional'
+  icon: string
+  name: string
+  description?: string
+  display_order: number
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}

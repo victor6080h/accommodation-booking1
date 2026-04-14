@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users, Sofa } from 'lucide-react'
 import RealtimeNotifications from '../components/RealtimeNotifications'
 import PWAInstaller from '../components/PWAInstaller'
 
@@ -154,6 +154,19 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">위치 안내</h2>
               <p className="text-gray-600 text-center">
                 메인 페이지 위치 정보 수정
+              </p>
+            </div>
+          </Link>
+
+          {/* 시설 관리 */}
+          <Link href="/admin/amenities">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-indigo-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4 mx-auto">
+                <Sofa className="w-8 h-8 text-indigo-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">시설 관리</h2>
+              <p className="text-gray-600 text-center">
+                방 구조, 기본 및 추가 옵션 관리
               </p>
             </div>
           </Link>
