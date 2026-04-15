@@ -19,6 +19,7 @@ export default function GuestCalendar() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [refundPolicy, setRefundPolicy] = useState<RefundPolicy | null>(null)
+  const [totalBookingPrice, setTotalBookingPrice] = useState(0)
   const [formData, setFormData] = useState({
     guestName: '',
     guestPhone: '',
@@ -310,7 +311,8 @@ export default function GuestCalendar() {
         ])
     }
 
-    alert('예약이 완료되었습니다!')
+    // 4. 총 금액 저장 및 모달 표시
+    setTotalBookingPrice(totalPrice)
     setShowBookingForm(false)
     setShowSuccessModal(true)
     setSelectedDates({ checkIn: null, checkOut: null })
@@ -681,9 +683,15 @@ export default function GuestCalendar() {
                         <span className="text-gray-600 font-medium">계좌번호</span>
                         <span className="text-xl font-bold text-gray-900 font-mono">{paymentInfo.account_number}</span>
                       </div>
-                      <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center justify-between py-2 border-b border-gray-200">
                         <span className="text-gray-600 font-medium">예금주</span>
                         <span className="text-xl font-bold text-gray-900">{paymentInfo.account_holder}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg px-3 mt-2">
+                        <span className="text-gray-700 font-bold text-lg">입금 금액</span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {totalBookingPrice.toLocaleString()}원
+                        </span>
                       </div>
                     </div>
 
