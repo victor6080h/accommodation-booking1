@@ -259,7 +259,57 @@ export default function GuestCalendar() {
       return
     }
 
-    // 1. 예약 생성
+    // 1. 예약 기간의 모든 날짜별 가격 가져오기
+    const checkInStr = formatDate(selectedDates.checkIn)
+    const checkOutStr = formatDate(selectedDates.checkOut)
+    
+    const { data: pricingData, error: pricingError } = await supabase
+      .from('date_pricing')
+      .select('*')
+      .eq('room_id', formData.roomId)
+      .eq('is_active', true)
+      .gte('date', checkInStr)
+      .lt('date', checkOutStr)
+
+    if (pricingError) {
+      console.error('Error fetching pricing:', pricingError)
+    }
+
+    // 2. 총 금액 계산 (날짜별 가격 반영)
+    let totalPrice = 0
+    const checkIn = new Date(selectedDates.checkIn)
+    const checkOut = new Date(selectedDates.checkOut)
+    const currentDate = new Date(checkIn)
+    
+    while (currentDate < checkOut) {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      const specialPrice = pricingData?.find(dp => dp.date === dateStr)
+      
+      if (specialPrice) {
+        // 일자별 가격이 설정된 경우
+        totalPrice += specialPrice.price
+      } else {
+        // 일자별 가격이 없는 경우 - 요일별 가격 확인
+        const dayOfWeek = currentDate.getDay() // 0(일)~6(토)
+        
+        // 금요일(5), 토요일(6), 일요일(0)은 주말 가격
+        if (selectedRoom.weekend_price && (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0)) {
+          totalPrice += selectedRoom.weekend_price
+        } 
+        // 월~목(1~4)은 주중 가격
+        else if (selectedRoom.weekday_price && (dayOfWeek >= 1 && dayOfWeek <= 4)) {
+          totalPrice += selectedRoom.weekday_price
+        } 
+        // 요일별 가격이 없으면 기본 가격
+        else {
+          totalPrice += selectedRoom.price
+        }
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+
+    // 3. 예약 생성
     const { data: newBooking, error: bookingError } = await supabase
       .from('bookings')
       .insert([
@@ -268,8 +318,8 @@ export default function GuestCalendar() {
           room_name: selectedRoom.name,
           guest_name: formData.guestName,
           guest_phone: formData.guestPhone,
-          check_in: formatDate(selectedDates.checkIn),
-          check_out: formatDate(selectedDates.checkOut),
+          check_in: checkInStr,
+          check_out: checkOutStr,
           status: 'confirmed'
         }
       ])
@@ -281,20 +331,7 @@ export default function GuestCalendar() {
       return
     }
 
-    // 2. 총 금액 계산 (날짜별 가격 반영)
-    let totalPrice = 0
-    const checkIn = new Date(selectedDates.checkIn)
-    const checkOut = new Date(selectedDates.checkOut)
-    const currentDate = new Date(checkIn)
-    
-    while (currentDate < checkOut) {
-      const dateStr = currentDate.toISOString().split('T')[0]
-      const specialPrice = datePricing.find(dp => dp.date === dateStr)
-      totalPrice += specialPrice ? specialPrice.price : selectedRoom.price
-      currentDate.setDate(currentDate.getDate() + 1)
-    }
-
-    // 3. 알림 생성
+    // 4. 알림 생성
     if (newBooking && newBooking.length > 0) {
       await supabase
         .from('booking_notifications')
@@ -303,15 +340,15 @@ export default function GuestCalendar() {
             booking_id: newBooking[0].id,
             guest_name: formData.guestName,
             room_name: selectedRoom.name,
-            check_in: formatDate(selectedDates.checkIn),
-            check_out: formatDate(selectedDates.checkOut),
+            check_in: checkInStr,
+            check_out: checkOutStr,
             total_price: totalPrice,
             is_read: false
           }
         ])
     }
 
-    // 4. 총 금액 저장 및 모달 표시
+    // 5. 총 금액 저장 및 모달 표시
     setTotalBookingPrice(totalPrice)
     setShowBookingForm(false)
     setShowSuccessModal(true)
