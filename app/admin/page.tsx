@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users, Sofa, CreditCard } from 'lucide-react'
+import { Calendar, BookOpen, Home, Building2, Sparkles, Image as ImageIcon, DollarSign, MapPin, User, LogOut, Users, Sofa, CreditCard, RefreshCcw } from 'lucide-react'
 import RealtimeNotifications from '../components/RealtimeNotifications'
 import PWAInstaller from '../components/PWAInstaller'
 
@@ -206,6 +206,19 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-bold text-center mb-2">입금 계좌</h2>
               <p className="text-gray-600 text-center">
                 입금 계좌 정보 관리
+              </p>
+            </div>
+          </Link>
+
+          {/* 환불 규정 관리 */}
+          <Link href="/admin/refund">
+            <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-rose-500">
+              <div className="flex items-center justify-center w-16 h-16 bg-rose-100 rounded-full mb-4 mx-auto">
+                <RefreshCcw className="w-8 h-8 text-rose-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-2">환불 규정</h2>
+              <p className="text-gray-600 text-center">
+                취소 및 환불 규정 관리
               </p>
             </div>
           </Link>

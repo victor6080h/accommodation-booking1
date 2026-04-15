@@ -140,3 +140,11 @@ export interface PaymentInfo {
   created_at?: string
   updated_at?: string
 }
+
+export interface RefundPolicy {
+  id: string
+  content: string
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}

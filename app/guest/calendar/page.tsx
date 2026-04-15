@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react'
-import { supabase, Room, Booking, DatePricing, PaymentInfo } from '@/lib/supabase'
+import { supabase, Room, Booking, DatePricing, PaymentInfo, RefundPolicy } from '@/lib/supabase'
 import { isHoliday, getHolidaysInMonth, HOLIDAY_COLOR, HOLIDAY_BG_COLOR } from '@/lib/holidays'
 
 export default function GuestCalendar() {
@@ -18,6 +18,7 @@ export default function GuestCalendar() {
   const [showBookingForm, setShowBookingForm] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
+  const [refundPolicy, setRefundPolicy] = useState<RefundPolicy | null>(null)
   const [formData, setFormData] = useState({
     guestName: '',
     guestPhone: '',
@@ -27,6 +28,7 @@ export default function GuestCalendar() {
   useEffect(() => {
     loadData()
     loadPaymentInfo()
+    loadRefundPolicy()
   }, [])
 
   useEffect(() => {
@@ -67,6 +69,18 @@ export default function GuestCalendar() {
 
     if (data) {
       setPaymentInfo(data as PaymentInfo)
+    }
+  }
+
+  const loadRefundPolicy = async () => {
+    const { data } = await supabase
+      .from('refund_policy')
+      .select('*')
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (data) {
+      setRefundPolicy(data as RefundPolicy)
     }
   }
 
@@ -717,6 +731,22 @@ export default function GuestCalendar() {
                     기한 내 미입금 시 예약이 자동으로 취소될 수 있습니다.
                   </p>
                 </div>
+
+                {/* Refund Policy */}
+                {refundPolicy && (
+                  <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-6">
+                    <h3 className="text-xl font-bold text-rose-900 mb-4 flex items-center">
+                      <span className="text-2xl mr-2">💰</span>
+                      취소 및 환불 규정
+                    </h3>
+                    
+                    <div className="bg-white rounded-lg p-4">
+                      <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                        {refundPolicy.content}
+                      </pre>
+                    </div>
+                  </div>
+                )}
 
                 {/* Close Button */}
                 <button
